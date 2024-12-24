@@ -1,0 +1,4 @@
+tmp/
+cmd/tmp
+.air.toml
+dump.rdb
