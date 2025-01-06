@@ -10,6 +10,36 @@ import (
 	"strings"
 )
 
+func SetSessionHandler(w http.ResponseWriter, r *http.Request) {
+	roomID := r.PathValue("room_id")
+	if roomID == "" {
+		http.Error(w, "room not found", http.StatusNotFound)
+		return
+	}
+
+	token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+
+	claims, err := utils.ValidateToken(token)
+	if err != nil {
+		http.Error(w, "invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	sessionID, err := utils.GenerateSessionID()
+	if err != nil {
+		http.Error(w, "failed to generate session id", http.StatusBadRequest)
+		return
+	}
+
+	err = room.StoreUserSession(roomID, sessionID, claims.ParticipantID)
+	if err != nil {
+		http.Error(w, "failed to store user session id", http.StatusBadRequest)
+		return
+	}
+
+	utils.JSONResponse(w, sessionID, http.StatusOK)
+}
+
 func UpdateUserMediaHandler(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("room_id")
 	_, err := room.GetRoom(roomID)

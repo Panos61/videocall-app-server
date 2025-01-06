@@ -4,11 +4,31 @@ import (
 	"encoding/json"
 	"fmt"
 	"server/internal/rdb"
+	"time"
 )
 
 type MediaState struct {
 	Video bool `json:"video"`
 	Audio bool `json:"audio"`
+}
+
+// Check if user is authorized to join the room
+func IsUserAuthorized(roomID string) (bool, error) {
+	if roomID == "" {
+		return false, nil
+	}
+
+	expiresIn, err := rdb.Client().HGet(rdb.Context(), "room:"+roomID, "expiresIn").Result()
+	if err != nil {
+		return false, err
+	}
+
+	expirationTime, err := time.Parse(time.RFC3339, expiresIn)
+	if err != nil {
+		return false, err
+	}
+
+	return !time.Now().After(expirationTime), nil
 }
 
 func UpdateUserMediaState(roomID, participantID string, mediaState MediaState) (*MediaState, error) {

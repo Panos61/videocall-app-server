@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func SetInvKeyHandler(w http.ResponseWriter, r *http.Request) {
+func SetInvitationHandler(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("id")
 
 	existingRoom, err := room.GetRoom(roomID)
@@ -17,26 +17,26 @@ func SetInvKeyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	invKey := room.GenerateInvKey(existingRoom.ID)
-	err = room.SetRoomKey(existingRoom.ID, invKey)
+	invitation := room.GenerateInvitationCode(existingRoom.ID)
+	invitationURL, err := room.SetInvitation(existingRoom.ID, invitation)
 	if err != nil {
 		http.Error(w, "failed to set invKey to this room", http.StatusInternalServerError)
 		return
 	}
 
-	err = room.InvitationKeyReverseIndex(invKey, existingRoom.ID)
+	err = room.CreateInvitationIndex(invitation, existingRoom.ID)
 	if err != nil {
 		http.Error(w, "failed to create reverse index for invitation key.", http.StatusInternalServerError)
 		return
 	}
 
 	utils.JSONResponse(w, map[string]string{
-		"invitation_key": invKey,
+		"invitation": invitationURL,
 	}, http.StatusOK)
 }
 
 // Server-sent event handler to check for expired invitation key
-func SSEKeyUpdateHandler(w http.ResponseWriter, r *http.Request) {
+func SSEInvitationHandler(w http.ResponseWriter, r *http.Request) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
@@ -55,11 +55,10 @@ func SSEKeyUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	for {
 		select {
 		case <-notify:
-			// log.Printf("Client disconnected from room: %s", roomID)
 			return
 
 		default:
-			isExpired, err := room.IsKeyExpired(roomID)
+			isExpired, err := room.IsInvitationExpired(roomID)
 			if err != nil {
 				fmt.Fprintf(w, "event: error\ndata: %v\n\n", err)
 				flusher.Flush()
@@ -67,18 +66,19 @@ func SSEKeyUpdateHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if isExpired {
-				newKey := room.GenerateInvKey(roomID)
-				err := room.SetRoomKey(roomID, newKey)
+				newCode := room.GenerateInvitationCode(roomID)
+
+				invitationURL, err := room.SetInvitation(roomID, newCode)
 				if err != nil {
 					fmt.Fprintf(w, "event: error\ndata: %v\n\n", err)
 					flusher.Flush()
 					return
 				}
 
-				fmt.Fprintf(w, "event: update\ndata: %s\n\n", newKey)
+				fmt.Fprintf(w, "event: update\ndata: %s\n\n", invitationURL)
 				flusher.Flush()
 
-				err = room.InvitationKeyReverseIndex(newKey, roomID)
+				err = room.CreateInvitationIndex(newCode, roomID)
 				if err != nil {
 					fmt.Fprintf(w, "event: error\ndata: %v\n\n", err)
 					flusher.Flush()
