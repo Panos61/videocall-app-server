@@ -1,7 +1,9 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"server/internal/room"
 	"server/internal/utils"
@@ -9,7 +11,7 @@ import (
 )
 
 func SetInvitationHandler(w http.ResponseWriter, r *http.Request) {
-	roomID := r.PathValue("id")
+	roomID := r.PathValue("room_id")
 
 	existingRoom, err := room.GetRoom(roomID)
 	if existingRoom == nil || err != nil {
@@ -43,7 +45,7 @@ func SSEInvitationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	roomID := r.PathValue("id")
+	roomID := r.PathValue("room_id")
 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -86,7 +88,45 @@ func SSEInvitationHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			time.Sleep(5 * time.Second)
+			time.Sleep(10 * time.Second)
 		}
 	}
+}
+
+func InvitationSettingsHandler(w http.ResponseWriter, r *http.Request) {
+	roomID := r.PathValue("room_id")
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		fmt.Println(err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var reqBody struct {
+		ExpiresIn string `json:"invitation_expiry"`
+	}
+
+	err = json.Unmarshal(body, &reqBody)
+	fmt.Println(err)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	expirationSet, err := room.SetInvitationExpiration(roomID, reqBody.ExpiresIn)
+	fmt.Printf("expirationSet %t\n", expirationSet)
+
+	if err != nil {
+		fmt.Println(err)
+		utils.JSONResponse(w, map[string]interface{}{
+			"expirationSet": false,
+			"error":         err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+
+	utils.JSONResponse(w, map[string]interface{}{
+		"expirationSet": expirationSet,
+	}, http.StatusOK)
 }

@@ -11,16 +11,17 @@ func InitializeRoutes() *http.ServeMux {
 
 	mux.HandleFunc("GET /create-room", CorsMiddleware(http.HandlerFunc(api.CreateRoomHandler)))
 	mux.HandleFunc("/join-room/{room_id}", CorsMiddleware(http.HandlerFunc(api.JoinRoomHandler)))
-	mux.HandleFunc("/leave-room/{id}", CorsMiddleware(http.HandlerFunc(api.LeaveRoomHandler)))
+	mux.HandleFunc("/leave-room/{room_id}", CorsMiddleware(http.HandlerFunc(api.LeaveRoomHandler)))
 
 	mux.HandleFunc("/start-call/{room_id}", CorsMiddleware(http.HandlerFunc(api.StartCallHandler)))
 	mux.HandleFunc("/set-session/{room_id}", CorsMiddleware(http.HandlerFunc(api.SetSessionHandler)))
 
+	mux.HandleFunc("/settings/{room_id}", CorsMiddleware(http.HandlerFunc(api.InvitationSettingsHandler)))
 	mux.HandleFunc("/update-user-media/{room_id}", CorsMiddleware(http.HandlerFunc(api.UpdateUserMediaHandler)))
 	mux.HandleFunc("GET /call-participants/{room_id}", CorsMiddleware(http.HandlerFunc(api.GetCallParticipantsHandler)))
 
-	mux.HandleFunc("GET /room-invitation/{id}", CorsMiddleware(http.HandlerFunc(api.SetInvitationHandler)))
-	mux.HandleFunc("GET /sse-invitation-update/{id}", CorsMiddleware(http.HandlerFunc(api.SSEInvitationHandler)))
+	mux.HandleFunc("GET /room-invitation/{room_id}", CorsMiddleware(http.HandlerFunc(api.SetInvitationHandler)))
+	mux.HandleFunc("GET /sse-invitation-update/{room_id}", CorsMiddleware(http.HandlerFunc(api.SSEInvitationHandler)))
 	mux.HandleFunc("/validate-invitation", CorsMiddleware(http.HandlerFunc(api.ValidateInvitationHandler)))
 
 	mux.HandleFunc("/ws/signalling/{room_id}", CorsMiddleware(http.HandlerFunc(signalling.SignallingHandler)))

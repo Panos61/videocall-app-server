@@ -76,7 +76,7 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func LeaveRoomHandler(w http.ResponseWriter, r *http.Request) {
-	roomID := r.PathValue("id")
+	roomID := r.PathValue("room_id")
 
 	token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 	claims, err := utils.ValidateToken(token)

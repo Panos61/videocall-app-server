@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/url"
 	"server/internal/rdb"
+	"strconv"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -39,9 +40,26 @@ func BuildInvitationURL(roomID, invitationCode string) string {
 	return invitationURL.String()
 }
 
+func SetInvitationExpiration(roomID string, inviteExpiration string) (bool, error) {
+	expiryToStr, err := strconv.Atoi(inviteExpiration)
+	if err != nil {
+		return false, err
+	}
+
+	expiresIn := time.Duration(expiryToStr) * time.Minute
+
+	err = rdb.Client().HSet(rdb.Context(), "room:"+roomID, "expiresIn", time.Now().Add(expiresIn).Format(time.RFC3339)).Err()
+	fmt.Println(err)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 // Sets the invitation URL and expiration time for the room
 func SetInvitation(roomID, invitationCode string) (string, error) {
-	expirationTime := 10 * time.Second
+	expirationTime := 20 * time.Second
 	invitationURL := BuildInvitationURL(roomID, invitationCode)
 
 	_, err := rdb.Client().HSet(rdb.Context(), "room:"+roomID, map[string]interface{}{
@@ -83,7 +101,7 @@ func GetCurrentInvitation(roomID string) (string, error) {
 
 // Creates a reverse index mapping invitation key to roomID
 func CreateInvitationIndex(invitation, roomID string) error {
-	expires := 10 * time.Second
+	expires := 20 * time.Second
 
 	err := rdb.Client().Set(rdb.Context(), "invitation:"+invitation, roomID, expires).Err()
 	if err != nil {
