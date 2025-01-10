@@ -26,12 +26,6 @@ func SetInvitationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = room.CreateInvitationIndex(invitation, existingRoom.ID)
-	if err != nil {
-		http.Error(w, "failed to create reverse index for invitation key.", http.StatusInternalServerError)
-		return
-	}
-
 	utils.JSONResponse(w, map[string]string{
 		"invitation": invitationURL,
 	}, http.StatusOK)
@@ -79,13 +73,6 @@ func SSEInvitationHandler(w http.ResponseWriter, r *http.Request) {
 
 				fmt.Fprintf(w, "event: update\ndata: %s\n\n", invitationURL)
 				flusher.Flush()
-
-				err = room.CreateInvitationIndex(newCode, roomID)
-				if err != nil {
-					fmt.Fprintf(w, "event: error\ndata: %v\n\n", err)
-					flusher.Flush()
-					return
-				}
 			}
 
 			time.Sleep(10 * time.Second)
@@ -114,11 +101,8 @@ func InvitationSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	expirationSet, err := room.SetInvitationExpiration(roomID, reqBody.ExpiresIn)
-	fmt.Printf("expirationSet %t\n", expirationSet)
-
+	expirationSet, err := room.SetExpiration(roomID, reqBody.ExpiresIn)
 	if err != nil {
-		fmt.Println(err)
 		utils.JSONResponse(w, map[string]interface{}{
 			"expirationSet": false,
 			"error":         err.Error(),
