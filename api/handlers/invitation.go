@@ -1,15 +1,17 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"server/internal/room"
 	"server/internal/utils"
 	"time"
 )
 
-func SetInvKeyHandler(w http.ResponseWriter, r *http.Request) {
-	roomID := r.PathValue("id")
+func SetInvitationHandler(w http.ResponseWriter, r *http.Request) {
+	roomID := r.PathValue("room_id")
 
 	existingRoom, err := room.GetRoom(roomID)
 	if existingRoom == nil || err != nil {
@@ -17,33 +19,27 @@ func SetInvKeyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	invKey := room.GenerateInvKey(existingRoom.ID)
-	err = room.SetRoomKey(existingRoom.ID, invKey)
+	invitation := room.GenerateInvitationCode(existingRoom.ID)
+	invitationURL, err := room.SetInvitation(existingRoom.ID, invitation)
 	if err != nil {
 		http.Error(w, "failed to set invKey to this room", http.StatusInternalServerError)
 		return
 	}
 
-	err = room.InvitationKeyReverseIndex(invKey, existingRoom.ID)
-	if err != nil {
-		http.Error(w, "failed to create reverse index for invitation key.", http.StatusInternalServerError)
-		return
-	}
-
 	utils.JSONResponse(w, map[string]string{
-		"invitation_key": invKey,
+		"invitation": invitationURL,
 	}, http.StatusOK)
 }
 
 // Server-sent event handler to check for expired invitation key
-func SSEKeyUpdateHandler(w http.ResponseWriter, r *http.Request) {
+func SSEInvitationHandler(w http.ResponseWriter, r *http.Request) {
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
 		return
 	}
 
-	roomID := r.PathValue("id")
+	roomID := r.PathValue("room_id")
 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -55,11 +51,10 @@ func SSEKeyUpdateHandler(w http.ResponseWriter, r *http.Request) {
 	for {
 		select {
 		case <-notify:
-			// log.Printf("Client disconnected from room: %s", roomID)
 			return
 
 		default:
-			isExpired, err := room.IsKeyExpired(roomID)
+			isExpired, err := room.IsInvitationExpired(roomID)
 			if err != nil {
 				fmt.Fprintf(w, "event: error\ndata: %v\n\n", err)
 				flusher.Flush()
@@ -67,26 +62,74 @@ func SSEKeyUpdateHandler(w http.ResponseWriter, r *http.Request) {
 			}
 
 			if isExpired {
-				newKey := room.GenerateInvKey(roomID)
-				err := room.SetRoomKey(roomID, newKey)
+				newCode := room.GenerateInvitationCode(roomID)
+
+				invitationURL, err := room.SetInvitation(roomID, newCode)
 				if err != nil {
 					fmt.Fprintf(w, "event: error\ndata: %v\n\n", err)
 					flusher.Flush()
 					return
 				}
 
-				fmt.Fprintf(w, "event: update\ndata: %s\n\n", newKey)
+				fmt.Fprintf(w, "event: update\ndata: %s\n\n", invitationURL)
 				flusher.Flush()
-
-				err = room.InvitationKeyReverseIndex(newKey, roomID)
-				if err != nil {
-					fmt.Fprintf(w, "event: error\ndata: %v\n\n", err)
-					flusher.Flush()
-					return
-				}
 			}
 
-			time.Sleep(5 * time.Second)
+			time.Sleep(10 * time.Second)
 		}
 	}
+}
+
+func InvitationSettingsHandler(w http.ResponseWriter, r *http.Request) {
+	roomID := r.PathValue("room_id")
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var reqBody struct {
+		ExpiresIn string `json:"invitation_expiry"`
+	}
+
+	err = json.Unmarshal(body, &reqBody)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	duration, err := room.SetExpiration(roomID, reqBody.ExpiresIn)
+	if err != nil {
+		utils.JSONResponse(w, map[string]interface{}{
+			"expirationSet": false,
+			"duration":      duration,
+			"error":         err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+
+	utils.JSONResponse(w, map[string]interface{}{
+		"expirationSet": true,
+		"duration":      duration,
+	}, http.StatusOK)
+}
+
+// @@ should be into a settings.go handler file but for now we keep it in here
+func GetSettings(w http.ResponseWriter, r *http.Request) {
+	roomID := r.PathValue("room_id")
+
+	invitationExpiry, err := room.GetExpiry(roomID)
+	if err != nil {
+		// return default expiration on error
+		utils.JSONResponse(w, map[string]interface{}{
+			// "invitation_expiry": 30 * time.Minute,
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+
+	utils.JSONResponse(w, map[string]interface{}{
+		"invitation_expiry": invitationExpiry,
+	}, http.StatusOK)
 }

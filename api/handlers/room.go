@@ -2,10 +2,8 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
-	"io"
-	"log"
 	"net/http"
+	"server/internal/participant"
 	"server/internal/room"
 	"server/internal/utils"
 	"strings"
@@ -33,23 +31,13 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
+	roomID := r.PathValue("room_id")
+	if roomID == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	var requestBody struct {
-		KeyInput string `json:"invKey"`
-	}
-
-	err = json.Unmarshal(body, &requestBody)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	isAuthorized, roomID, err := room.AuthorizeInvitationKey(requestBody.KeyInput)
+	isAuthorized, err := participant.IsUserAuthorized(roomID)
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(map[string]interface{}{
@@ -75,18 +63,20 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := struct {
-		RoomID      string            `json:"room_id"`
-		Participant *room.Participant `json:"participant"`
+		IsAuthorized bool              `json:"isAuthorized"`
+		RoomID       string            `json:"room_id"`
+		Participant  *room.Participant `json:"participant"`
 	}{
-		RoomID:      roomID,
-		Participant: participant,
+		IsAuthorized: isAuthorized,
+		RoomID:       roomID,
+		Participant:  participant,
 	}
 
 	utils.JSONResponse(w, response, http.StatusOK)
 }
 
 func LeaveRoomHandler(w http.ResponseWriter, r *http.Request) {
-	roomID := r.PathValue("id")
+	roomID := r.PathValue("room_id")
 
 	token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 	claims, err := utils.ValidateToken(token)
@@ -95,16 +85,13 @@ func LeaveRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	leftRoom, err := room.LeaveRoom(roomID, claims.ParticipantID)
-	log.Printf("err leaving %v", err)
+	_, err = room.LeaveRoom(roomID, claims.ParticipantID)
 	if err != nil {
 		utils.JSONResponse(w, map[string]bool{
 			"leftRoom": false,
 		}, http.StatusBadRequest)
 		return
 	}
-
-	fmt.Printf("left: %v\n", leftRoom)
 
 	utils.JSONResponse(w, map[string]bool{
 		"leftRoom": true,

@@ -77,17 +77,17 @@ func SignallingHandler(w http.ResponseWriter, r *http.Request) {
 		case "connect":
 			// Notify all other participants that a new user has joined
 			for userID, client := range participants {
-				// if userID != message.SessionID { // Skip the sender
-				err := client.Send(Message{
-					Type:      "session_joined",
-					SessionID: message.SessionID,
-				})
-				if err != nil {
-					log.Printf("WebSocket error: %s", err)
-					client.Socket.Close()
-					delete(participants, userID)
+				if userID != message.SessionID { // Skip the sender
+					err := client.Send(Message{
+						Type:      "session_joined",
+						SessionID: message.SessionID,
+					})
+					if err != nil {
+						log.Printf("WebSocket error: %s", err)
+						client.Socket.Close()
+						delete(participants, userID)
+					}
 				}
-				// }
 			}
 
 			err := conn.WriteJSON(Message{

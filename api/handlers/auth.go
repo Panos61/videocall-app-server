@@ -6,40 +6,9 @@ import (
 	"net/http"
 	"server/internal/room"
 	"server/internal/utils"
-	"strings"
 )
 
-func SetSessionHandler(w http.ResponseWriter, r *http.Request) {
-	roomID := r.PathValue("room_id")
-	if roomID == "" {
-		http.Error(w, "room not found", http.StatusNotFound)
-		return
-	}
-
-	token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-
-	claims, err := utils.ValidateToken(token)
-	if err != nil {
-		http.Error(w, "invalid token", http.StatusUnauthorized)
-		return
-	}
-
-	sessionID, err := utils.GenerateSessionID()
-	if err != nil {
-		http.Error(w, "failed to generate session id", http.StatusBadRequest)
-		return
-	}
-
-	err = room.StoreUserSession(roomID, sessionID, claims.ParticipantID)
-	if err != nil {
-		http.Error(w, "failed to store user session id", http.StatusBadRequest)
-		return
-	}
-
-	utils.JSONResponse(w, sessionID, http.StatusOK)
-}
-
-func AuthorizeInvitationHandler(w http.ResponseWriter, r *http.Request) {
+func ValidateInvitationHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
@@ -47,7 +16,8 @@ func AuthorizeInvitationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var requestBody struct {
-		KeyInput string `json:"keyInput"`
+		RoomID string `json:"room_id"`
+		Code   string `json:"code"`
 	}
 
 	err = json.Unmarshal(body, &requestBody)
@@ -56,17 +26,38 @@ func AuthorizeInvitationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isAuthorized, roomID, err := room.AuthorizeInvitationKey(requestBody.KeyInput)
+	isExpired, err := room.IsInvitationExpired(requestBody.RoomID)
 	if err != nil {
 		utils.JSONResponse(w, map[string]interface{}{
-			"isAuthorized": false,
-			"roomID":       "",
+			"isValid":   false,
+			"isExpired": true,
+			"roomID":    "",
+		}, http.StatusUnauthorized)
+		return
+	}
+
+	isValid, roomID, err := room.ValidateInvitation(requestBody.Code)
+	if err != nil {
+		utils.JSONResponse(w, map[string]interface{}{
+			"isValid":   false,
+			"isExpired": false,
+			"roomID":    "",
+		}, http.StatusUnauthorized)
+		return
+	}
+
+	if roomID != requestBody.RoomID {
+		utils.JSONResponse(w, map[string]interface{}{
+			"isValid":   false,
+			"isExpired": false,
+			"roomID":    "",
 		}, http.StatusUnauthorized)
 		return
 	}
 
 	utils.JSONResponse(w, map[string]interface{}{
-		"isAuthorized": isAuthorized,
-		"roomID":       roomID,
+		"isValid":   isValid,
+		"IsExpired": isExpired,
+		"roomID":    roomID,
 	}, http.StatusOK)
 }
