@@ -40,41 +40,56 @@ func BuildInvitationURL(roomID, invitationCode string) string {
 	return invitationURL.String()
 }
 
-func SetExpiration(roomID string, inviteExpiration string) (bool, error) {
+func SetExpiration(roomID string, inviteExpiration string) (string, error) {
 	expiryToStr, err := strconv.Atoi(inviteExpiration)
 	if err != nil {
-		return false, err
+		return "", err
 	}
 
 	expiresIn := time.Duration(expiryToStr) * time.Minute
 
-	err = rdb.Client().HSet(rdb.Context(), "room:"+roomID, "expiresIn", time.Now().Add(expiresIn).Format(time.RFC3339)).Err()
+	err = rdb.Client().HSet(rdb.Context(), "room:"+roomID, map[string]interface{}{
+		"expiresIn": time.Now().Add(expiresIn).Format(time.RFC3339),
+		"duration":  inviteExpiration,
+	}).Err()
 	if err != nil {
-		return false, err
+		return "", err
 	}
 
-	return true, nil
+	return inviteExpiration, nil
 }
 
-func GetExpiration(roomID string) (time.Duration, error) {
-	defaultExpiration := 30 * time.Minute
+// Returns the expiration duration in string format
+func GetExpiry(roomID string) (string, error) {
+	defaultValue := "30"
 
-	expiresIn, err := rdb.Client().HGet(rdb.Context(), "room:"+roomID, "").Result()
-	if err != nil || expiresIn == "" {
-		return defaultExpiration, fmt.Errorf("failed to get expiration time %v", err)
+	duration, err := rdb.Client().HGet(rdb.Context(), "room:"+roomID, "duration").Result()
+	if err != nil {
+		return defaultValue, err
 	}
 
-	duration, err := strconv.Atoi(expiresIn)
+	return duration, nil
+}
+
+func getExpirationDuration(roomID string) (time.Duration, error) {
+	defaultExpiration := 30 * time.Minute
+
+	durationStr, err := rdb.Client().HGet(rdb.Context(), "room:"+roomID, "duration").Result()
+	if err != nil || durationStr == "" {
+		return defaultExpiration, err
+	}
+
+	minutes, err := strconv.Atoi(durationStr)
 	if err != nil {
 		return defaultExpiration, err
 	}
 
-	return time.Duration(duration) * time.Minute, nil
+	return time.Duration(minutes) * time.Minute, nil
 }
 
 // Sets the invitation URL and expiration time for the room
 func SetInvitation(roomID, invitationCode string) (string, error) {
-	expirationTime, err := GetExpiration(roomID)
+	expirationTime, err := getExpirationDuration(roomID)
 	if err != nil {
 		// if error, get the default expiration time
 		expirationTime = 30 * time.Minute

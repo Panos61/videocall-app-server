@@ -99,16 +99,37 @@ func InvitationSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	expirationSet, err := room.SetExpiration(roomID, reqBody.ExpiresIn)
+	duration, err := room.SetExpiration(roomID, reqBody.ExpiresIn)
 	if err != nil {
 		utils.JSONResponse(w, map[string]interface{}{
 			"expirationSet": false,
+			"duration":      duration,
 			"error":         err.Error(),
 		}, http.StatusInternalServerError)
 		return
 	}
 
 	utils.JSONResponse(w, map[string]interface{}{
-		"expirationSet": expirationSet,
+		"expirationSet": true,
+		"duration":      duration,
+	}, http.StatusOK)
+}
+
+// @@ should be into a settings.go handler file but for now we keep it in here
+func GetSettings(w http.ResponseWriter, r *http.Request) {
+	roomID := r.PathValue("room_id")
+
+	invitationExpiry, err := room.GetExpiry(roomID)
+	if err != nil {
+		// return default expiration on error
+		utils.JSONResponse(w, map[string]interface{}{
+			// "invitation_expiry": 30 * time.Minute,
+			"error": err.Error(),
+		}, http.StatusInternalServerError)
+		return
+	}
+
+	utils.JSONResponse(w, map[string]interface{}{
+		"invitation_expiry": invitationExpiry,
 	}, http.StatusOK)
 }
