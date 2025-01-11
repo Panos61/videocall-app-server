@@ -85,7 +85,6 @@ func InvitationSettingsHandler(w http.ResponseWriter, r *http.Request) {
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		fmt.Println(err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -95,7 +94,6 @@ func InvitationSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = json.Unmarshal(body, &reqBody)
-	fmt.Println(err)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
