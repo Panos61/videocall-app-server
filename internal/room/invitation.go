@@ -124,9 +124,19 @@ func IsInvitationExpired(roomID string) (bool, error) {
 	return time.Now().After(expirationTime), nil
 }
 
+func InvitationCodeReverseIndex(invitationKey, roomID string) error {
+	// Creates a reverse index mapping invitationKey to roomID
+	err := rdb.Client().HSet(rdb.Context(), "invitationCode:"+invitationKey, "roomID", roomID).Err()
+	if err != nil {
+		return fmt.Errorf("failed to create invkey reverse index %w", err)
+	}
+
+	return nil
+}
+
 // Checks for any existing room using the invKey reverse index mapped to roomID
-func ValidateInvitation(urlInput string) (bool, string, error) {
-	roomID, err := rdb.Client().Get(rdb.Context(), "invitation:"+urlInput).Result()
+func ValidateInvitation(code string) (bool, string, error) {
+	roomID, err := rdb.Client().HGet(rdb.Context(), "invitationCode:"+code, "roomID").Result()
 	if err != nil {
 		if err == redis.Nil {
 			return false, "", err

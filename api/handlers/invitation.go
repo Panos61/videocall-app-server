@@ -19,10 +19,16 @@ func SetInvitationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	invitation := room.GenerateInvitationCode(existingRoom.ID)
-	invitationURL, err := room.SetInvitation(existingRoom.ID, invitation)
+	invitationCode := room.GenerateInvitationCode(existingRoom.ID)
+	invitationURL, err := room.SetInvitation(existingRoom.ID, invitationCode)
 	if err != nil {
 		http.Error(w, "failed to set invKey to this room", http.StatusInternalServerError)
+		return
+	}
+
+	err = room.InvitationCodeReverseIndex(invitationCode, existingRoom.ID)
+	if err != nil {
+		http.Error(w, "failed to create reverse index for invitation key.", http.StatusInternalServerError)
 		return
 	}
 
@@ -123,9 +129,9 @@ func GetSettings(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// return default expiration on error
 		utils.JSONResponse(w, map[string]interface{}{
-			// "invitation_expiry": 30 * time.Minute,
-			"error": err.Error(),
-		}, http.StatusInternalServerError)
+			"invitation_expiry": "30",
+			"error":             err.Error(),
+		}, http.StatusBadRequest)
 		return
 	}
 
