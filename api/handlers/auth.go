@@ -26,21 +26,21 @@ func ValidateInvitationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isExpired, err := room.IsInvitationExpired(requestBody.RoomID)
-	if err != nil {
-		utils.JSONResponse(w, map[string]interface{}{
-			"isValid":   false,
-			"isExpired": true,
-			"roomID":    "",
-		}, http.StatusUnauthorized)
-		return
-	}
-
 	isValid, roomID, err := room.ValidateInvitation(requestBody.Code)
 	if err != nil {
 		utils.JSONResponse(w, map[string]interface{}{
 			"isValid":   false,
 			"isExpired": false,
+			"roomID":    "",
+		}, http.StatusUnauthorized)
+		return
+	}
+
+	isExpired, err := room.IsExpired(requestBody.RoomID)
+	if err != nil {
+		utils.JSONResponse(w, map[string]interface{}{
+			"isValid":   false,
+			"isExpired": true,
 			"roomID":    "",
 		}, http.StatusUnauthorized)
 		return

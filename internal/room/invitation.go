@@ -40,6 +40,31 @@ func BuildInvitationURL(roomID, invitationCode string) string {
 	return invitationURL.String()
 }
 
+// Sets the invitation URL and expiration time for the room
+func SetInvitation(roomID, invitationCode string) (string, error) {
+	// expirationTime, err := getExpirationDuration(roomID)
+	// if err != nil {
+	// 	// if error, get the default expiration time
+	// 	expirationTime = 30 * time.Minute
+	// }
+
+	expirationTime := 15 * time.Second
+
+	invitationURL := BuildInvitationURL(roomID, invitationCode)
+
+	_, err := rdb.Client().HSet(rdb.Context(), "room:"+roomID, map[string]interface{}{
+		"invitation": invitationURL,
+		"expiresIn":  time.Now().Add(expirationTime).Format(time.RFC3339),
+	}).Result()
+
+	if err != nil {
+		log.Printf("Error setting room invitation key %s\n", err)
+		return "", err
+	}
+
+	return invitationURL, nil
+}
+
 func SetExpiration(roomID string, inviteExpiration string) (string, error) {
 	expiryToStr, err := strconv.Atoi(inviteExpiration)
 	if err != nil {
@@ -87,30 +112,7 @@ func getExpirationDuration(roomID string) (time.Duration, error) {
 	return time.Duration(minutes) * time.Minute, nil
 }
 
-// Sets the invitation URL and expiration time for the room
-func SetInvitation(roomID, invitationCode string) (string, error) {
-	expirationTime, err := getExpirationDuration(roomID)
-	if err != nil {
-		// if error, get the default expiration time
-		expirationTime = 30 * time.Minute
-	}
-
-	invitationURL := BuildInvitationURL(roomID, invitationCode)
-
-	_, err = rdb.Client().HSet(rdb.Context(), "room:"+roomID, map[string]interface{}{
-		"invitation": invitationURL,
-		"expiresIn":  time.Now().Add(expirationTime).Format(time.RFC3339),
-	}).Result()
-
-	if err != nil {
-		log.Printf("Error setting room invitation key %s\n", err)
-		return "", err
-	}
-
-	return invitationURL, nil
-}
-
-func IsInvitationExpired(roomID string) (bool, error) {
+func IsExpired(roomID string) (bool, error) {
 	expiresIn, err := rdb.Client().HGet(rdb.Context(), "room:"+roomID, "expiresIn").Result()
 	if err != nil {
 		return true, nil
@@ -124,9 +126,16 @@ func IsInvitationExpired(roomID string) (bool, error) {
 	return time.Now().After(expirationTime), nil
 }
 
+// Creates a reverse index mapping invitationKey to roomID
 func InvitationCodeReverseIndex(invitationKey, roomID string) error {
-	// Creates a reverse index mapping invitationKey to roomID
-	err := rdb.Client().HSet(rdb.Context(), "invitationCode:"+invitationKey, "roomID", roomID).Err()
+	defaultExpiration := 15 * time.Second
+
+	// expiresIn, err := getExpirationDuration(roomID)
+	// if err != nil {
+	// 	expiresIn = defaultExpiration
+	// }
+
+	err := rdb.Client().Set(rdb.Context(), "invitationCode:"+invitationKey, roomID, defaultExpiration).Err()
 	if err != nil {
 		return fmt.Errorf("failed to create invkey reverse index %w", err)
 	}
@@ -136,7 +145,7 @@ func InvitationCodeReverseIndex(invitationKey, roomID string) error {
 
 // Checks for any existing room using the invKey reverse index mapped to roomID
 func ValidateInvitation(code string) (bool, string, error) {
-	roomID, err := rdb.Client().HGet(rdb.Context(), "invitationCode:"+code, "roomID").Result()
+	roomID, err := rdb.Client().Get(rdb.Context(), "invitationCode:"+code).Result()
 	if err != nil {
 		if err == redis.Nil {
 			return false, "", err
