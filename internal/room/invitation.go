@@ -112,7 +112,6 @@ func getExpirationDuration(roomID string) (time.Duration, error) {
 
 func IsExpired(roomID string) (bool, error) {
 	expiresIn, err := rdb.Client().HGet(rdb.Context(), "room:"+roomID, "expiresIn").Result()
-	fmt.Println("expiresIn", expiresIn)
 	if err != nil {
 		return true, nil
 	}
