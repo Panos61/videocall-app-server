@@ -117,7 +117,6 @@ func IsExpired(roomID string) (bool, error) {
 	}
 
 	expirationTime, err := time.Parse(time.RFC3339, expiresIn)
-	fmt.Println("expirationTime", expirationTime)
 	if err != nil {
 		return false, fmt.Errorf("failed to parse expiry time: %v", err)
 	}
