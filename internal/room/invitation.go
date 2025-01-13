@@ -48,9 +48,11 @@ func SetInvitation(roomID, invitationCode string) (string, error) {
 		expirationTime = 30 * time.Minute
 	}
 
+	duration := strconv.Itoa(int(expirationTime.Minutes()))
 	invitationURL := BuildInvitationURL(roomID, invitationCode)
 
 	_, err = rdb.Client().HSet(rdb.Context(), "room:"+roomID, map[string]interface{}{
+		"duration":   duration,
 		"invitation": invitationURL,
 		"expiresIn":  time.Now().Add(expirationTime).Format(time.RFC3339),
 	}).Result()
