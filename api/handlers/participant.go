@@ -10,10 +10,41 @@ import (
 	"strings"
 )
 
+func GetMeHandler(w http.ResponseWriter, r *http.Request) {
+	roomID := r.PathValue("room_id")
+	if roomID == "" {
+		utils.JSONResponse(w, map[string]interface{}{
+			"error": "room not found",
+		}, http.StatusNotFound)
+		return
+	}
+
+	token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	claims, err := utils.ValidateToken(token)
+	if err != nil {
+		utils.JSONResponse(w, map[string]interface{}{
+			"error": err.Error(),
+		}, http.StatusUnauthorized)
+		return
+	}
+
+	me, err := participant.GetMe(roomID, claims.ParticipantID)
+	if err != nil {
+		utils.JSONResponse(w, map[string]interface{}{
+			"error": err.Error(),
+		}, http.StatusNotFound)
+		return
+	}
+
+	utils.JSONResponse(w, me, http.StatusOK)
+}
+
 func SetSessionHandler(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("room_id")
 	if roomID == "" {
-		http.Error(w, "room not found", http.StatusNotFound)
+		utils.JSONResponse(w, map[string]interface{}{
+			"error": "room not found",
+		}, http.StatusNotFound)
 		return
 	}
 
