@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"server/internal/participant"
+	"server/internal/media"
 	"server/internal/rdb"
 	"server/internal/utils"
 	"strconv"
@@ -14,13 +14,13 @@ import (
 )
 
 type Participant struct {
-	ID         string                 `json:"id"`
-	Username   string                 `json:"username"`
-	IsHost     bool                   `json:"isHost"`
-	AvatarSrc  string                 `json:"avatar_src"`
-	MediaState participant.MediaState `json:"media"`
-	Token      string                 `json:"jwt,omitempty"`
-	SessionID  string                 `json:"session_id,omitempty"`
+	ID         string           `json:"id"`
+	Username   string           `json:"username"`
+	IsHost     bool             `json:"isHost"`
+	AvatarSrc  string           `json:"avatar_src"`
+	MediaState media.MediaState `json:"media"`
+	Token      string           `json:"jwt,omitempty"`
+	SessionID  string           `json:"session_id,omitempty"`
 }
 
 type Room struct {

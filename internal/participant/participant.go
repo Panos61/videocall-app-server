@@ -1,26 +1,21 @@
 package participant
 
 import (
-	"encoding/json"
 	"fmt"
+	"server/internal/media"
 	"server/internal/rdb"
 	"strconv"
 	"time"
 )
 
 type Participant struct {
-	ID         string     `json:"id"`
-	Username   string     `json:"username"`
-	IsHost     bool       `json:"isHost"`
-	AvatarSrc  string     `json:"avatar_src"`
-	MediaState MediaState `json:"media"`
-	Token      string     `json:"jwt,omitempty"`
-	SessionID  string     `json:"session_id,omitempty"`
-}
-
-type MediaState struct {
-	Video bool `json:"video"`
-	Audio bool `json:"audio"`
+	ID         string           `json:"id"`
+	Username   string           `json:"username"`
+	IsHost     bool             `json:"isHost"`
+	AvatarSrc  string           `json:"avatar_src"`
+	MediaState media.MediaState `json:"media"`
+	Token      string           `json:"jwt,omitempty"`
+	SessionID  string           `json:"session_id,omitempty"`
 }
 
 func GetMe(roomID, participantID string) (*Participant, error) {
@@ -43,7 +38,7 @@ func GetMe(roomID, participantID string) (*Participant, error) {
 		Username:  me["username"],
 		IsHost:    isHost,
 		AvatarSrc: me["avatar_src"],
-		MediaState: MediaState{
+		MediaState: media.MediaState{
 			Video: me["video"] == "true",
 			Audio: me["audio"] == "true",
 		},
@@ -69,27 +64,4 @@ func IsUserAuthorized(roomID string) (bool, error) {
 	}
 
 	return !time.Now().After(expirationTime), nil
-}
-
-func UpdateUserMediaState(roomID, participantID string, mediaState MediaState) (*MediaState, error) {
-	media := map[string]bool{
-		"audio": mediaState.Audio,
-		"video": mediaState.Video,
-	}
-
-	mediaJSON, err := json.Marshal(media)
-	if err != nil {
-		return nil, err
-	}
-
-	err = rdb.Client().HSet(rdb.Context(), "room:"+roomID+":participant:"+participantID, map[string]interface{}{
-		"media": mediaJSON,
-	}).Err()
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Printf("media %v\n", media)
-
-	return &mediaState, nil
 }
