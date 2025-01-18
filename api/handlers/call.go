@@ -2,22 +2,24 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
+	"server/internal/media"
+	"server/internal/participant"
 	"server/internal/room"
 	"server/internal/utils"
 	"strings"
 )
 
-type callReqBody struct {
-	Username  string `json:"username"`
-	AvatarSrc string `json:"avatar_src"`
+type reqBody struct {
+	Username   string           `json:"username"`
+	AvatarSrc  string           `json:"avatar_src"`
+	MediaState media.MediaState `json:"media"`
 }
 
 type StartCallResponse struct {
-	RoomID      string            `json:"room_id"`
-	Participant *room.Participant `json:"participant"`
+	RoomID      string                   `json:"room_id"`
+	Participant *participant.Participant `json:"participant"`
 }
 
 func StartCallHandler(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +31,7 @@ func StartCallHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var payload callReqBody
+	var payload reqBody
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -44,7 +46,6 @@ func StartCallHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-
 	if token == "" {
 		http.Error(w, "authorization token missing", http.StatusBadRequest)
 		return
@@ -56,12 +57,20 @@ func StartCallHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	participant, err := room.StartCall(roomID, claims.ParticipantID, payload.Username, payload.AvatarSrc)
+	_, err = media.UpdateMedia(roomID, claims.ParticipantID, media.MediaState{
+		Video: payload.MediaState.Video,
+		Audio: payload.MediaState.Audio,
+	})
 	if err != nil {
-		http.Error(w, "failed to start call", http.StatusBadRequest)
+		http.Error(w, "failed to update media state", http.StatusBadRequest)
+		return
 	}
 
-	fmt.Printf("participant %+v\n", participant)
+	participant, err := room.StartCall(roomID, claims.ParticipantID, payload.Username, payload.AvatarSrc)
+	if err != nil {
+		utils.JSONResponse(w, map[string]string{"error": "failed to start call"}, http.StatusBadRequest)
+		return
+	}
 
 	response := StartCallResponse{
 		RoomID:      roomID,

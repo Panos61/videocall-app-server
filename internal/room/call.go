@@ -1,14 +1,12 @@
 package room
 
 import (
-	"fmt"
+	"server/internal/participant"
 	"server/internal/rdb"
 )
 
-func StartCall(roomID, participantID, username, avatarSrc string) (*Participant, error) {
-	var participant *Participant
-
-	_, err := rdb.Client().HSet(rdb.Context(), "room:"+roomID+":participant:"+participantID, map[string]interface{}{
+func StartCall(roomID, participantID, username, avatarSrc string) (*participant.Participant, error) {
+	_, err := rdb.Client().HMSet(rdb.Context(), "room:"+roomID+":participant:"+participantID, map[string]interface{}{
 		"username":   username,
 		"avatar_src": avatarSrc,
 	}).Result()
@@ -17,11 +15,11 @@ func StartCall(roomID, participantID, username, avatarSrc string) (*Participant,
 		return nil, err
 	}
 
-	participant = &Participant{
-		Username: username,
+	p := &participant.Participant{
+		ID:        participantID,
+		Username:  username,
+		AvatarSrc: avatarSrc,
 	}
 
-	fmt.Printf("room/call participant: %+v\n", participant)
-
-	return participant, nil
+	return p, nil
 }
