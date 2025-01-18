@@ -1,11 +1,9 @@
 package api
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"server/internal/media"
-	"server/internal/utils"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -60,16 +58,8 @@ func MediaHandler(w http.ResponseWriter, r *http.Request) {
 	// Wait for auth message
 	var authMsg AuthMessage
 	err = conn.ReadJSON(&authMsg)
-	fmt.Println("auth", authMsg)
 	if err != nil {
 		log.Printf("Error reading auth message: %v", err)
-		return
-	}
-
-	// Validate JWT
-	claims, err := utils.ValidateToken(authMsg.Token)
-	if err != nil {
-		conn.WriteJSON(map[string]string{"error": "unauthorized"})
 		return
 	}
 
@@ -94,7 +84,6 @@ func MediaHandler(w http.ResponseWriter, r *http.Request) {
 	var message Message
 	for {
 		err = conn.ReadJSON(&message)
-		fmt.Println("message", message)
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("error: %v", err)
@@ -102,18 +91,12 @@ func MediaHandler(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		updatedMedia, err := media.UpdateMedia(roomID, claims.ParticipantID, message.Media)
-		if err != nil {
-			log.Printf("Failed to update media state: %v", err)
-			continue
-		}
-
 		connectionsMutex.Lock()
 		for sessionID, client := range participants {
 			if sessionID != message.SessionID {
 				err := client.Send(Message{
 					SessionID: message.SessionID,
-					Media:     *updatedMedia,
+					Media:     message.Media,
 				})
 				if err != nil {
 					log.Printf("WebSocket error: %v", err)

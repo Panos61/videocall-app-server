@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"server/internal/media"
+	"server/internal/participant"
 	"server/internal/rdb"
 	"server/internal/utils"
 	"strconv"
@@ -13,20 +14,10 @@ import (
 	"github.com/google/uuid"
 )
 
-type Participant struct {
-	ID         string           `json:"id"`
-	Username   string           `json:"username"`
-	IsHost     bool             `json:"isHost"`
-	AvatarSrc  string           `json:"avatar_src"`
-	MediaState media.MediaState `json:"media"`
-	Token      string           `json:"jwt,omitempty"`
-	SessionID  string           `json:"session_id,omitempty"`
-}
-
 type Room struct {
-	ID           string                  `json:"id"`
-	Participants map[string]*Participant `json:"participants"`
-	HostID       string                  `json:"host_id"`
+	ID           string                              `json:"id"`
+	Participants map[string]*participant.Participant `json:"participants"`
+	HostID       string                              `json:"host_id"`
 }
 
 func CreateRoom() (*Room, error) {
@@ -34,7 +25,7 @@ func CreateRoom() (*Room, error) {
 
 	newRoom := &Room{
 		ID:           roomID,
-		Participants: make(map[string]*Participant),
+		Participants: make(map[string]*participant.Participant),
 	}
 
 	err := rdb.Client().HSet(rdb.Context(), "room:"+roomID, map[string]interface{}{"id": roomID}).Err()
@@ -45,8 +36,8 @@ func CreateRoom() (*Room, error) {
 	return newRoom, nil
 }
 
-func JoinRoom(roomID string) (*Participant, error) {
-	participant := &Participant{
+func JoinRoom(roomID string) (*participant.Participant, error) {
+	participant := &participant.Participant{
 		ID:       utils.GenerateParticipantID(),
 		Username: "",
 		IsHost:   false,
@@ -85,8 +76,8 @@ func JoinRoom(roomID string) (*Participant, error) {
 	return participant, nil
 }
 
-func SetHostParticipant(roomID string) (*Participant, error) {
-	participant := &Participant{
+func SetHostParticipant(roomID string) (*participant.Participant, error) {
+	participant := &participant.Participant{
 		ID:     utils.GenerateParticipantID(),
 		IsHost: true,
 	}
@@ -189,8 +180,8 @@ func UpdateHost(roomID, previousHostID string, participantIDs []string) (bool, e
 	return true, nil
 }
 
-func GetParticipant(roomID, participarticipantID string) (*Participant, error) {
-	participantData, err := rdb.Client().HGetAll(rdb.Context(), "room:"+roomID+":participant:"+participarticipantID).Result()
+func GetParticipant(roomID, participantID string) (*participant.Participant, error) {
+	participantData, err := rdb.Client().HGetAll(rdb.Context(), "room:"+roomID+":participant:"+participantID).Result()
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +191,7 @@ func GetParticipant(roomID, participarticipantID string) (*Participant, error) {
 		return nil, err
 	}
 
-	participant := &Participant{
+	participant := &participant.Participant{
 		ID:        participantData["id"],
 		Username:  participantData["username"],
 		IsHost:    isHost,
@@ -211,13 +202,13 @@ func GetParticipant(roomID, participarticipantID string) (*Participant, error) {
 	return participant, nil
 }
 
-func GetCallParticipants(roomID string) ([]*Participant, error) {
+func GetCallParticipants(roomID string) ([]*participant.Participant, error) {
 	participantsID, err := rdb.Client().SMembers(rdb.Context(), "room:"+roomID+":participants").Result()
 	if err != nil {
 		return nil, err
 	}
 
-	participants := make([]*Participant, 0, len(participantsID))
+	participants := make([]*participant.Participant, 0, len(participantsID))
 	for _, participantID := range participantsID {
 		participantData, err := rdb.Client().HGetAll(rdb.Context(), "room:"+roomID+":participant:"+participantID).Result()
 		if err != nil {
@@ -234,12 +225,18 @@ func GetCallParticipants(roomID string) ([]*Participant, error) {
 			return nil, err
 		}
 
-		participant := &Participant{
-			ID:        participantData["id"],
-			Username:  participantData["username"],
-			IsHost:    isHost,
-			AvatarSrc: participantData["avatar_src"],
-			SessionID: participantData["session_id"],
+		var mediaState media.MediaState
+		if err := json.Unmarshal([]byte(participantData["media"]), &mediaState); err != nil {
+			return nil, err
+		}
+
+		participant := &participant.Participant{
+			ID:         participantData["id"],
+			Username:   participantData["username"],
+			IsHost:     isHost,
+			AvatarSrc:  participantData["avatar_src"],
+			SessionID:  participantData["session_id"],
+			MediaState: mediaState,
 		}
 
 		participants = append(participants, participant)

@@ -53,23 +53,23 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var participant *room.Participant
+	var joinedParticipant *participant.Participant
 
 	if isAuthorized {
-		participant, err = room.JoinRoom(roomID)
+		joinedParticipant, err = room.JoinRoom(roomID)
 		if err != nil {
 			http.Error(w, "failed to join room", http.StatusInternalServerError)
 		}
 	}
 
 	response := struct {
-		IsAuthorized bool              `json:"isAuthorized"`
-		RoomID       string            `json:"room_id"`
-		Participant  *room.Participant `json:"participant"`
+		IsAuthorized bool                     `json:"isAuthorized"`
+		RoomID       string                   `json:"room_id"`
+		Participant  *participant.Participant `json:"participant"`
 	}{
 		IsAuthorized: isAuthorized,
 		RoomID:       roomID,
-		Participant:  participant,
+		Participant:  joinedParticipant,
 	}
 
 	utils.JSONResponse(w, response, http.StatusOK)
