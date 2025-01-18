@@ -2,7 +2,6 @@ package media
 
 import (
 	"encoding/json"
-	"fmt"
 	"server/internal/rdb"
 )
 
@@ -28,8 +27,6 @@ func UpdateMedia(roomID, participantID string, mediaState MediaState) (*MediaSta
 	if err != nil {
 		return nil, err
 	}
-
-	fmt.Printf("media %v\n", media)
 
 	return &mediaState, nil
 }

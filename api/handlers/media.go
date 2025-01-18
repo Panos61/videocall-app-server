@@ -99,7 +99,6 @@ func MediaHandler(w http.ResponseWriter, r *http.Request) {
 					Media:     message.Media,
 				})
 				if err != nil {
-					log.Printf("WebSocket error: %v", err)
 					client.Socket.Close()
 					delete(participants, sessionID)
 				}

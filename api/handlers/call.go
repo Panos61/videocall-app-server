@@ -46,7 +46,6 @@ func StartCallHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-
 	if token == "" {
 		http.Error(w, "authorization token missing", http.StatusBadRequest)
 		return

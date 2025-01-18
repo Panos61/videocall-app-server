@@ -75,7 +75,7 @@ func SSEInvitationHandler(w http.ResponseWriter, r *http.Request) {
 	// Listen for client disconnect
 	notify := r.Context().Done()
 
-	ticker := time.NewTicker(5 * time.Second)
+	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
 	for {
