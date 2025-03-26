@@ -22,6 +22,17 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// set host's jwt cookie
+	jwtCookie := http.Cookie{
+		Name:     "jwt-cookie",
+		Value:    hostParticipant.Token,
+		MaxAge:   3600,
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+	}
+	http.SetCookie(w, &jwtCookie)
+
 	response := map[string]interface{}{
 		"id":           newRoom.ID,
 		"participants": *hostParticipant,
@@ -60,6 +71,16 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			http.Error(w, "failed to join room", http.StatusInternalServerError)
 		}
+
+		jwtCookie := http.Cookie{
+			Name:     "jwt-cookie",
+			Value:    joinedParticipant.Token,
+			MaxAge:   3600,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+		}
+		http.SetCookie(w, &jwtCookie)
 	}
 
 	response := struct {
