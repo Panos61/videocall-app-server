@@ -138,6 +138,13 @@ func LeaveRoom(roomID, participantID string) (bool, error) {
 		}
 	}
 
+	if len(participantIDs) != 1 {
+		_, err := notifyUserLeft(roomID, participant)
+		if err != nil {
+			return false, err
+		}
+	}
+
 	if len(participantIDs) == 1 {
 		pipe.Del(rdb.Context(), "room:"+roomID)
 		pipe.Del(rdb.Context(), "room:"+roomID+":participants")
