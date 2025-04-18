@@ -29,6 +29,8 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   3600,
 		HttpOnly: true,
 		Secure:   true,
+		Path:     "/",
+		Domain:   "",
 		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(w, &jwtCookie)
@@ -78,6 +80,8 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 			MaxAge:   3600,
 			HttpOnly: true,
 			Secure:   true,
+			Path:     "/",
+			Domain:   "",
 			SameSite: http.SameSiteLaxMode,
 		}
 		http.SetCookie(w, &jwtCookie)
