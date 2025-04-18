@@ -10,6 +10,11 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const (
+	UserLeft = "user_left"
+	HostLeft = "host_left"
+)
+
 type UserEvent struct {
 	Type    string         `json:"type"`
 	Payload map[string]any `json:"payload"`
@@ -81,9 +86,30 @@ func UserEventSubscription(roomID string, participantID string, conn *websocket.
 	<-done
 }
 
+func notifyHostLeft(roomID string, p *participant.Participant) (bool, error) {
+	payload := UserEvent{
+		Type: HostLeft,
+		Payload: map[string]any{
+			"participant_id":   p.ID,
+			"participant_name": p.Username,
+		},
+	}
+
+	payloadJSON, err := json.Marshal(payload)
+	if err != nil {
+		return false, err
+	}
+
+	if err := rdb.Client().Publish(rdb.Context(), "room:"+roomID+":user_events", payloadJSON).Err(); err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 func notifyUserLeft(roomID string, p *participant.Participant) (bool, error) {
 	payload := UserEvent{
-		Type: "user_left",
+		Type: UserLeft,
 		Payload: map[string]any{
 			"participant_id":   p.ID,
 			"participant_name": p.Username,

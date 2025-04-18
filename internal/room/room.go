@@ -139,9 +139,16 @@ func LeaveRoom(roomID, participantID string) (bool, error) {
 	}
 
 	if len(participantIDs) != 1 {
-		_, err := notifyUserLeft(roomID, participant)
-		if err != nil {
-			return false, err
+		if participant.IsHost {
+			_, err := notifyHostLeft(roomID, participant)
+			if err != nil {
+				return false, err
+			}
+		} else {
+			_, err := notifyUserLeft(roomID, participant)
+			if err != nil {
+				return false, err
+			}
 		}
 	}
 
