@@ -5,10 +5,17 @@ import (
 	"net/http"
 	"server/api"
 	"server/internal/turnserver"
+
+	"github.com/joho/godotenv"
 )
 
 func Run() {
 	router := api.InitializeRoutes()
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("error loading .env file")
+	}
 
 	go func() {
 		log.Println("Starting TURN server on port 3478")
