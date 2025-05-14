@@ -3,7 +3,7 @@ package api
 import (
 	"net/http"
 	api "server/api/handlers"
-	"server/internal/signalling"
+	"server/internal/session"
 )
 
 func InitializeRoutes() *http.ServeMux {
@@ -27,7 +27,8 @@ func InitializeRoutes() *http.ServeMux {
 	mux.HandleFunc("/validate-invitation", CorsMiddleware(http.HandlerFunc(api.ValidateInvitationHandler)))
 	mux.HandleFunc("/refresh-token", CorsMiddleware(http.HandlerFunc(api.RefreshTokenHandler)))
 
-	mux.HandleFunc("/ws/signalling/{room_id}", CorsMiddleware(http.HandlerFunc(signalling.SignallingHandler)))
+	mux.HandleFunc("/ws/signalling/{room_id}", CorsMiddleware(http.HandlerFunc(session.SessionHandler)))
+	// mux.HandleFunc("/ws/signalling/{room_id}", CorsMiddleware(http.HandlerFunc(signalling.SignallingHandler)))
 	mux.HandleFunc("/ws/media/{room_id}", CorsMiddleware(http.HandlerFunc(api.MediaHandler)))
 	mux.HandleFunc("/ws/user-events/{room_id}", CorsMiddleware(http.HandlerFunc(api.UserEventNotifyHandler)))
 
