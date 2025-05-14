@@ -9,13 +9,13 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var upgraderV2 = websocket.Upgrader{
+var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool {
 		return true
 	},
 }
 
-type MessageV2 struct {
+type Message struct {
 	Type        string `json:"type"`
 	RoomID      string `json:"roomID"`
 	SessionID   string `json:"sessionID"`
@@ -24,22 +24,22 @@ type MessageV2 struct {
 	To          string `json:"to"`
 }
 
-type ConnectionV2 struct {
+type Connection struct {
 	Socket *websocket.Conn
 	mu     sync.Mutex
 }
 
-var rooms = make(map[string]map[string]*ConnectionV2)
+var rooms = make(map[string]map[string]*Connection)
 var roomsMutex sync.Mutex
 
-func (c *ConnectionV2) Send(message MessageV2) error {
+func (c *Connection) Send(message Message) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.Socket.WriteJSON(message)
 }
 
 func SessionHandler(w http.ResponseWriter, r *http.Request) {
-	conn, err := upgraderV2.Upgrade(w, r, nil)
+	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Fatal("Error handling websocket connection.")
 		return
@@ -57,7 +57,7 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 	var sessionID string
 
 	for {
-		var msg MessageV2
+		var msg Message
 		if err := conn.ReadJSON(&msg); err != nil {
 			break
 		}
@@ -68,9 +68,9 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 
 			roomsMutex.Lock()
 			if rooms[roomID] == nil {
-				rooms[roomID] = make(map[string]*ConnectionV2)
+				rooms[roomID] = make(map[string]*Connection)
 			}
-			rooms[roomID][sessionID] = &ConnectionV2{Socket: conn}
+			rooms[roomID][sessionID] = &Connection{Socket: conn}
 			roomsMutex.Unlock()
 
 			livekitToken, err := createLivekitToken(roomID, sessionID)
@@ -80,7 +80,7 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 
 			fmt.Println("livekitToken", livekitToken)
 
-			conn.WriteJSON(MessageV2{
+			conn.WriteJSON(Message{
 				Type:        "livekit_token",
 				SessionID:   sessionID,
 				Token:       livekitToken,
