@@ -1,4 +1,4 @@
-package signalling
+package session
 
 import (
 	"server/internal/config"
