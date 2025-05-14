@@ -1,7 +1,6 @@
 package session
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -49,7 +48,6 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 
 	roomID := r.PathValue("room_id")
 	if roomID == "" {
-		log.Println("Room ID is missing.")
 		return
 	}
 
@@ -78,10 +76,8 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 
-			fmt.Println("livekitToken", livekitToken)
-
 			conn.WriteJSON(Message{
-				Type:        "livekit_token",
+				Type:        "livekit_session_token",
 				SessionID:   sessionID,
 				Token:       livekitToken,
 				Description: "User connected to room",
