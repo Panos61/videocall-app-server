@@ -3,7 +3,6 @@ package api
 import (
 	"log"
 	"net/http"
-	"server/internal/media"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -20,9 +19,14 @@ type Connection struct {
 	mu     sync.Mutex
 }
 
+type MediaState struct {
+	Audio bool `json:"audio"`
+	Video bool `json:"video"`
+}
+
 type Message struct {
-	SessionID string           `json:"sessionID"`
-	Media     media.MediaState `json:"media"`
+	SessionID string     `json:"sessionID"`
+	Media     MediaState `json:"media"`
 }
 
 type AuthMessage struct {
