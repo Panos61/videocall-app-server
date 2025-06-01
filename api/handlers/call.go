@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"server/internal/media"
 	"server/internal/participant"
 	"server/internal/room"
 	"server/internal/utils"
@@ -12,9 +11,8 @@ import (
 )
 
 type reqBody struct {
-	Username   string           `json:"username"`
-	AvatarSrc  string           `json:"avatar_src"`
-	MediaState media.MediaState `json:"media"`
+	Username  string `json:"username"`
+	AvatarSrc string `json:"avatar_src"`
 }
 
 type StartCallResponse struct {
@@ -54,15 +52,6 @@ func StartCallHandler(w http.ResponseWriter, r *http.Request) {
 	claims, err := utils.ValidateToken(token)
 	if err != nil {
 		http.Error(w, "invalid token", http.StatusUnauthorized)
-		return
-	}
-
-	_, err = media.UpdateMedia(roomID, claims.ParticipantID, media.MediaState{
-		Video: payload.MediaState.Video,
-		Audio: payload.MediaState.Audio,
-	})
-	if err != nil {
-		http.Error(w, "failed to update media state", http.StatusBadRequest)
 		return
 	}
 

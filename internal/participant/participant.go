@@ -2,20 +2,18 @@ package participant
 
 import (
 	"fmt"
-	"server/internal/media"
 	"server/internal/rdb"
 	"strconv"
 	"time"
 )
 
 type Participant struct {
-	ID         string           `json:"id"`
-	Username   string           `json:"username"`
-	IsHost     bool             `json:"isHost"`
-	AvatarSrc  string           `json:"avatar_src"`
-	MediaState media.MediaState `json:"media"`
-	Token      string           `json:"jwt,omitempty"`
-	SessionID  string           `json:"session_id,omitempty"`
+	ID        string `json:"id"`
+	Username  string `json:"username"`
+	IsHost    bool   `json:"isHost"`
+	AvatarSrc string `json:"avatar_src"`
+	Token     string `json:"jwt,omitempty"`
+	SessionID string `json:"session_id,omitempty"`
 }
 
 func GetMe(roomID, participantID string) (*Participant, error) {
@@ -38,10 +36,6 @@ func GetMe(roomID, participantID string) (*Participant, error) {
 		Username:  me["username"],
 		IsHost:    isHost,
 		AvatarSrc: me["avatar_src"],
-		MediaState: media.MediaState{
-			Video: me["video"] == "true",
-			Audio: me["audio"] == "true",
-		},
 	}
 
 	return &participant, nil

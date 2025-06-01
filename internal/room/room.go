@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
-	"server/internal/media"
 	"server/internal/participant"
 	"server/internal/rdb"
 	"server/internal/utils"
@@ -239,18 +238,12 @@ func GetCallParticipants(roomID string) ([]*participant.Participant, error) {
 			return nil, err
 		}
 
-		var mediaState media.MediaState
-		if err := json.Unmarshal([]byte(participantData["media"]), &mediaState); err != nil {
-			return nil, err
-		}
-
 		participant := &participant.Participant{
-			ID:         participantData["id"],
-			Username:   participantData["username"],
-			IsHost:     isHost,
-			AvatarSrc:  participantData["avatar_src"],
-			SessionID:  participantData["session_id"],
-			MediaState: mediaState,
+			ID:        participantData["id"],
+			Username:  participantData["username"],
+			IsHost:    isHost,
+			AvatarSrc: participantData["avatar_src"],
+			SessionID: participantData["session_id"],
 		}
 
 		participants = append(participants, participant)
