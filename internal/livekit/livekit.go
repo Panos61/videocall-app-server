@@ -1,4 +1,4 @@
-package session
+package livekit
 
 import (
 	"server/internal/config"
@@ -6,7 +6,7 @@ import (
 	"github.com/livekit/protocol/auth"
 )
 
-func createLivekitToken(roomID, sessionID string) (string, error) {
+func CreateLivekitToken(roomID, sessionID string) (string, error) {
 	config, err := config.LoadConfig()
 	if err != nil {
 		return "", err

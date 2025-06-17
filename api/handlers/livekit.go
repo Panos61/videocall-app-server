@@ -1,41 +1,12 @@
-package session
+package api
 
 import (
+	"fmt"
 	"log"
 	"net/http"
-	"sync"
 
-	"github.com/gorilla/websocket"
+	"server/internal/livekit"
 )
-
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
-type Message struct {
-	Type        string `json:"type"`
-	RoomID      string `json:"roomID"`
-	SessionID   string `json:"sessionID"`
-	Token       string `json:"token"`
-	Description string `json:"description"`
-	To          string `json:"to"`
-}
-
-type Connection struct {
-	Socket *websocket.Conn
-	mu     sync.Mutex
-}
-
-var rooms = make(map[string]map[string]*Connection)
-var roomsMutex sync.Mutex
-
-func (c *Connection) Send(message Message) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	return c.Socket.WriteJSON(message)
-}
 
 func SessionHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -53,6 +24,17 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 
 	var connected bool
 	var sessionID string
+	var authMsg AuthMessage
+
+	// Cleanup on disconnect
+	defer func() {
+		connectionsMutex.Lock()
+		delete(rooms[roomID], authMsg.SessionID)
+		if len(rooms[roomID]) == 0 {
+			delete(rooms, roomID)
+		}
+		connectionsMutex.Unlock()
+	}()
 
 	for {
 		var msg Message
@@ -71,10 +53,12 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 			rooms[roomID][sessionID] = &Connection{Socket: conn}
 			roomsMutex.Unlock()
 
-			livekitToken, err := createLivekitToken(roomID, sessionID)
+			livekitToken, err := livekit.CreateLivekitToken(roomID, sessionID)
 			if err != nil {
 				break
 			}
+
+			fmt.Println("livekitToken", livekitToken)
 
 			conn.WriteJSON(Message{
 				Type:        "livekit_session_token",

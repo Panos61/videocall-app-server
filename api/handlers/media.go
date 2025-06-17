@@ -8,42 +8,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var upgrader = websocket.Upgrader{
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
-}
-
-type Connection struct {
-	Socket *websocket.Conn
-	mu     sync.Mutex
-}
-
-type MediaState struct {
-	Audio bool `json:"audio"`
-	Video bool `json:"video"`
-}
-
-type Message struct {
-	SessionID string     `json:"sessionID"`
-	Media     MediaState `json:"media"`
-}
-
-type AuthMessage struct {
-	Type      string `json:"type"`
-	Token     string `json:"token"`
-	SessionID string `json:"sessionID"`
-}
-
 var connectionPool = make(map[string]map[string]*Connection)
 var connectionsMutex sync.Mutex
-
-func (c *Connection) Send(message Message) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	return c.Socket.WriteJSON(message)
-}
 
 func MediaHandler(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("room_id")
