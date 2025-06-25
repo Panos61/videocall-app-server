@@ -27,9 +27,16 @@ func CreateRoom() (*Room, error) {
 		Participants: make(map[string]*participant.Participant),
 	}
 
-	err := rdb.Client().HSet(rdb.Context(), "room:"+roomID, map[string]interface{}{"id": roomID}).Err()
+	pipe := rdb.Client().TxPipeline()
+	pipe.HSet(rdb.Context(), "room:"+roomID, map[string]interface{}{"id": roomID})
+	pipe.HSet(rdb.Context(), "room:"+roomID+":settings", map[string]interface{}{
+		"invitation_expiry": "30",
+		"invite_permission": false,
+	})
+
+	_, err := pipe.Exec(rdb.Context())
 	if err != nil {
-		return nil, fmt.Errorf("error saving room: %w", err)
+		return nil, fmt.Errorf("error creating room: %w", err)
 	}
 
 	return newRoom, nil

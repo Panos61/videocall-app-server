@@ -14,14 +14,15 @@ func InitializeRoutes() *http.ServeMux {
 
 	mux.HandleFunc("/start-call/{room_id}", CorsMiddleware(http.HandlerFunc(api.StartCallHandler)))
 	mux.HandleFunc("/set-session/{room_id}", CorsMiddleware(http.HandlerFunc(api.SetSessionHandler)))
-	mux.HandleFunc("/update-settings/{room_id}", CorsMiddleware(http.HandlerFunc(api.InvitationSettingsHandler)))
 
 	mux.HandleFunc("/get-me/{room_id}", CorsMiddleware(http.HandlerFunc(api.GetMeHandler)))
 	mux.HandleFunc("GET /call-participants/{room_id}", CorsMiddleware(http.HandlerFunc(api.GetCallParticipantsHandler)))
 
 	mux.HandleFunc("GET /room-invitation/{room_id}", CorsMiddleware(http.HandlerFunc(api.SetInvitationHandler)))
 	mux.HandleFunc("GET /sse-invitation-update/{room_id}", CorsMiddleware(http.HandlerFunc(api.SSEInvitationHandler)))
-	mux.HandleFunc("/settings/{room_id}", CorsMiddleware(http.HandlerFunc(api.GetSettings)))
+
+	mux.HandleFunc("/settings/{room_id}", CorsMiddleware(http.HandlerFunc(api.GetRoomSettingsHandler)))
+	mux.HandleFunc("/update-settings/{room_id}", CorsMiddleware(http.HandlerFunc(api.UpdateRoomSettingsHandler)))
 
 	mux.HandleFunc("/validate-invitation", CorsMiddleware(http.HandlerFunc(api.ValidateInvitationHandler)))
 	mux.HandleFunc("/refresh-token", CorsMiddleware(http.HandlerFunc(api.RefreshTokenHandler)))
