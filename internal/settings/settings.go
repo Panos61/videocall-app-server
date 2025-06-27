@@ -3,7 +3,6 @@ package settings
 import (
 	"fmt"
 	"server/internal/rdb"
-	"server/internal/room"
 )
 
 type Settings struct {
@@ -12,17 +11,19 @@ type Settings struct {
 }
 
 func GetRoomSettings(roomID string) (Settings, error) {
-	invitationExpiry, err := room.GetExpiry(roomID)
+	settingsData, err := rdb.Client().HGetAll(rdb.Context(), "room:"+roomID+":settings").Result()
 	if err != nil {
 		return Settings{}, err
 	}
 
+	// fmt.Println("SETTINGS DATA", settingsData)
+
 	settings := Settings{
-		InvitationExpiry: invitationExpiry,
-		InvitePermission: false,
+		InvitationExpiry: settingsData["invitation_expiry"],
+		InvitePermission: settingsData["invite_permission"] == "true",
 	}
 
-	fmt.Println("SETTINGS CONTROLLER", settings)
+	// fmt.Println("SETTINGS CONTROLLER", settings)
 
 	return settings, nil
 }
@@ -32,6 +33,7 @@ func UpdateRoomSettings(roomID string, settings Settings) (Settings, error) {
 		"invitation_expiry": settings.InvitationExpiry,
 		"invite_permission": settings.InvitePermission,
 	}).Result()
+	// fmt.Println("UPDATED SETTINGS", settingsData)
 
 	if err != nil {
 		return Settings{}, fmt.Errorf("error updating room settings: %w", err)

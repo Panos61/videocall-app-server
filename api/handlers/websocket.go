@@ -39,9 +39,6 @@ type Message struct {
 	Media       MediaState `json:"media"`
 }
 
-var rooms = make(map[string]map[string]*Connection)
-var roomsMutex sync.Mutex
-
 func (c *Connection) Send(message Message) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()

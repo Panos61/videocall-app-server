@@ -4,9 +4,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"sync"
 
 	"server/internal/livekit"
 )
+
+var rooms = make(map[string]map[string]*Connection)
+var roomsMutex sync.Mutex
 
 func SessionHandler(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
