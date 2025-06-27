@@ -3,13 +3,9 @@ package api
 import (
 	"log"
 	"net/http"
-	"sync"
 
 	"github.com/gorilla/websocket"
 )
-
-var connectionPool = make(map[string]map[string]*Connection)
-var connectionsMutex sync.Mutex
 
 func MediaHandler(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("room_id")
