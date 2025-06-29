@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"server/internal/settings"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -29,14 +30,19 @@ type MediaState struct {
 	Video bool `json:"video"`
 }
 
+type SettingsMessage struct {
+	Settings settings.Settings `json:"settings"`
+}
+
 type Message struct {
-	Type        string     `json:"type"`
-	RoomID      string     `json:"roomID"`
-	SessionID   string     `json:"sessionID"`
-	Token       string     `json:"token"`
-	Description string     `json:"description"`
-	To          string     `json:"to"`
-	Media       MediaState `json:"media"`
+	Type        string            `json:"type"`
+	RoomID      string            `json:"roomID"`
+	SessionID   string            `json:"sessionID"`
+	Token       string            `json:"token"`
+	Description string            `json:"description"`
+	To          string            `json:"to"`
+	Media       MediaState        `json:"media"`
+	Settings    settings.Settings `json:"settings"`
 }
 
 var connectionPool = make(map[string]map[string]*Connection)

@@ -52,3 +52,16 @@ func UpdateRoomSettingsHandler(w http.ResponseWriter, r *http.Request) {
 
 	utils.JSONResponse(w, updatedSettings, http.StatusOK)
 }
+
+func SettingsBroadcastHandler(w http.ResponseWriter, r *http.Request) {
+	roomID := r.PathValue("room_id")
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		http.Error(w, "failed to upgrade to websocket", http.StatusInternalServerError)
+		return
+	}
+	defer conn.Close()
+
+	settings.SettingsSubscription(roomID, conn)
+}
