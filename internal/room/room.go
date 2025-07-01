@@ -27,9 +27,16 @@ func CreateRoom() (*Room, error) {
 		Participants: make(map[string]*participant.Participant),
 	}
 
-	err := rdb.Client().HSet(rdb.Context(), "room:"+roomID, map[string]interface{}{"id": roomID}).Err()
+	pipe := rdb.Client().TxPipeline()
+	pipe.HSet(rdb.Context(), "room:"+roomID, map[string]any{"id": roomID})
+	pipe.HSet(rdb.Context(), "room:"+roomID+":settings", map[string]any{
+		"invitation_expiry": "30",
+		"invite_permission": false,
+	})
+
+	_, err := pipe.Exec(rdb.Context())
 	if err != nil {
-		return nil, fmt.Errorf("error saving room: %w", err)
+		return nil, fmt.Errorf("error creating room: %w", err)
 	}
 
 	return newRoom, nil
@@ -54,7 +61,7 @@ func JoinRoom(roomID string) (*participant.Participant, error) {
 
 	pipe := rdb.Client().TxPipeline()
 	pipe.SAdd(rdb.Context(), "room:"+roomID+":participants", participant.ID)
-	pipe.HMSet(rdb.Context(), "room:"+roomID+":participant:"+participant.ID, map[string]interface{}{
+	pipe.HMSet(rdb.Context(), "room:"+roomID+":participant:"+participant.ID, map[string]any{
 		"id":       participant.ID,
 		"username": participant.Username,
 		"isHost":   participant.IsHost,
@@ -93,7 +100,7 @@ func SetHostParticipant(roomID string) (*participant.Participant, error) {
 
 	pipe := rdb.Client().TxPipeline()
 	pipe.SAdd(rdb.Context(), "room:"+roomID+":participants", participant.ID)
-	pipe.HMSet(rdb.Context(), "room:"+roomID+":participant:"+participant.ID, map[string]interface{}{
+	pipe.HMSet(rdb.Context(), "room:"+roomID+":participant:"+participant.ID, map[string]any{
 		"id":     participant.ID,
 		"isHost": participant.IsHost,
 		"media":  mediaJSON,
@@ -182,8 +189,8 @@ func UpdateHost(roomID, previousHostID string, participantIDs []string) (bool, e
 	newHostID := nonHostParticipants[randomIndex]
 
 	pipe := rdb.Client().Pipeline()
-	pipe.HSet(rdb.Context(), "room:"+roomID, map[string]interface{}{"host_id": newHostID})
-	pipe.HSet(rdb.Context(), "room:"+roomID+":participant:"+newHostID, map[string]interface{}{"isHost": true})
+	pipe.HSet(rdb.Context(), "room:"+roomID, map[string]any{"host_id": newHostID})
+	pipe.HSet(rdb.Context(), "room:"+roomID+":participant:"+newHostID, map[string]any{"isHost": true})
 
 	_, err := pipe.Exec(rdb.Context())
 	if err != nil {

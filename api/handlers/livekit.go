@@ -29,9 +29,9 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 	// Cleanup on disconnect
 	defer func() {
 		connectionsMutex.Lock()
-		delete(rooms[roomID], authMsg.SessionID)
-		if len(rooms[roomID]) == 0 {
-			delete(rooms, roomID)
+		delete(connectionPool[roomID], authMsg.SessionID)
+		if len(connectionPool[roomID]) == 0 {
+			delete(connectionPool, roomID)
 		}
 		connectionsMutex.Unlock()
 	}()
@@ -46,12 +46,12 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 			sessionID = msg.SessionID
 			connected = true
 
-			roomsMutex.Lock()
-			if rooms[roomID] == nil {
-				rooms[roomID] = make(map[string]*Connection)
+			connectionsMutex.Lock()
+			if connectionPool[roomID] == nil {
+				connectionPool[roomID] = make(map[string]*Connection)
 			}
-			rooms[roomID][sessionID] = &Connection{Socket: conn}
-			roomsMutex.Unlock()
+			connectionPool[roomID][sessionID] = &Connection{Socket: conn}
+			connectionsMutex.Unlock()
 
 			livekitToken, err := livekit.CreateLivekitToken(roomID, sessionID)
 			if err != nil {
@@ -71,9 +71,9 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if msg.To == "" {
-			roomsMutex.Lock()
-			target := rooms[roomID][msg.SessionID]
-			roomsMutex.Unlock()
+			connectionsMutex.Lock()
+			target := connectionPool[roomID][msg.SessionID]
+			connectionsMutex.Unlock()
 
 			if target != nil {
 				target.Send(msg)
@@ -81,7 +81,7 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	roomsMutex.Lock()
-	delete(rooms[roomID], sessionID)
-	roomsMutex.Unlock()
+	connectionsMutex.Lock()
+	delete(connectionPool[roomID], sessionID)
+	connectionsMutex.Unlock()
 }
