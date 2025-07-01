@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"server/internal/settings"
@@ -47,8 +46,6 @@ func UpdateRoomSettingsHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to update room settings", http.StatusInternalServerError)
 		return
 	}
-
-	fmt.Println("UPDATED SETTINGS", updatedSettings)
 
 	utils.JSONResponse(w, updatedSettings, http.StatusOK)
 }

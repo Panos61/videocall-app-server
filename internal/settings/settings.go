@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"server/internal/rdb"
+	"strconv"
 
 	"github.com/gorilla/websocket"
 )
@@ -19,9 +20,19 @@ func GetRoomSettings(roomID string) (Settings, error) {
 		return Settings{}, err
 	}
 
+	invitationExpiry := settingsData["invitation_expiry"]
+	invitePermission, err := strconv.ParseBool(settingsData["invite_permission"])
+
+	if err != nil {
+		return Settings{
+			InvitationExpiry: invitationExpiry,
+			InvitePermission: false,
+		}, err
+	}
+
 	settings := Settings{
-		InvitationExpiry: settingsData["invitation_expiry"],
-		InvitePermission: settingsData["invite_permission"] == "true",
+		InvitationExpiry: invitationExpiry,
+		InvitePermission: invitePermission,
 	}
 
 	return settings, nil
@@ -37,8 +48,7 @@ func UpdateRoomSettings(roomID string, settings Settings) (Settings, error) {
 		return Settings{}, fmt.Errorf("error updating room settings: %w", err)
 	}
 
-	broadcaseSettingsUpdate(roomID, settings)
-
+	broadcastSettingsUpdate(roomID, settings)
 	return settings, nil
 }
 
@@ -103,7 +113,7 @@ func SettingsSubscription(roomID string, conn *websocket.Conn) {
 }
 
 // Broadcasts the host-only settings update to all connected clients in the room
-func broadcaseSettingsUpdate(roomID string, settings Settings) (bool, error) {
+func broadcastSettingsUpdate(roomID string, settings Settings) (bool, error) {
 	payload := Settings{
 		InvitationExpiry: settings.InvitationExpiry,
 		InvitePermission: settings.InvitePermission,
