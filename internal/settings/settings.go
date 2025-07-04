@@ -10,29 +10,48 @@ import (
 )
 
 type Settings struct {
+	StrictMode       bool   `json:"strict_mode"`
 	InvitationExpiry string `json:"invitation_expiry"`
 	InvitePermission bool   `json:"invite_permission"`
 }
 
 func GetRoomSettings(roomID string) (Settings, error) {
+	defaultSettings := Settings{
+		StrictMode:       false,
+		InvitationExpiry: "30",
+		InvitePermission: false,
+	}
+
 	settingsData, err := rdb.Client().HGetAll(rdb.Context(), "room:"+roomID+":settings").Result()
 	if err != nil {
-		return Settings{}, err
+		return defaultSettings, err
 	}
 
-	invitationExpiry := settingsData["invitation_expiry"]
-	invitePermission, err := strconv.ParseBool(settingsData["invite_permission"])
-
-	if err != nil {
-		return Settings{
-			InvitationExpiry: invitationExpiry,
-			InvitePermission: false,
-		}, err
+	if len(settingsData) == 0 {
+		return defaultSettings, nil
 	}
 
-	settings := Settings{
-		InvitationExpiry: invitationExpiry,
-		InvitePermission: invitePermission,
+	settings := defaultSettings
+
+	if strictModeStr, exists := settingsData["strict_mode"]; exists && strictModeStr != "" {
+		if strictMode, err := strconv.ParseBool(strictModeStr); err == nil {
+			settings.StrictMode = strictMode
+		}
+	}
+
+	if invitePermissionStr, exists := settingsData["invite_permission"]; exists && invitePermissionStr != "" {
+		if invitePermission, err := strconv.ParseBool(invitePermissionStr); err == nil {
+			settings.InvitePermission = invitePermission
+		}
+	}
+
+	if invitationExpiry, exists := settingsData["invitation_expiry"]; exists && invitationExpiry != "" {
+		settings.InvitationExpiry = invitationExpiry
+	}
+
+	// When strict mode is on, force invite_permission to false
+	if settings.StrictMode {
+		settings.InvitePermission = false
 	}
 
 	return settings, nil
@@ -40,12 +59,23 @@ func GetRoomSettings(roomID string) (Settings, error) {
 
 func UpdateRoomSettings(roomID string, settings Settings) (Settings, error) {
 	_, err := rdb.Client().HSet(rdb.Context(), "room:"+roomID+":settings", map[string]any{
+		"strict_mode":       settings.StrictMode,
 		"invitation_expiry": settings.InvitationExpiry,
 		"invite_permission": settings.InvitePermission,
 	}).Result()
 
 	if err != nil {
 		return Settings{}, fmt.Errorf("error updating room settings: %w", err)
+	}
+
+	// When strict mode is on, force invite_permission to false
+	if settings.StrictMode {
+		settings.InvitePermission = false
+	}
+
+	// When invite_permission is true, force strict_mode to false
+	if settings.InvitePermission {
+		settings.StrictMode = false
 	}
 
 	broadcastSettingsUpdate(roomID, settings)
@@ -115,6 +145,7 @@ func SettingsSubscription(roomID string, conn *websocket.Conn) {
 // Broadcasts the host-only settings update to all connected clients in the room
 func broadcastSettingsUpdate(roomID string, settings Settings) (bool, error) {
 	payload := Settings{
+		StrictMode:       settings.StrictMode,
 		InvitationExpiry: settings.InvitationExpiry,
 		InvitePermission: settings.InvitePermission,
 	}
