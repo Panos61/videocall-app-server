@@ -13,19 +13,8 @@ import (
 	"github.com/google/uuid"
 )
 
-type Room struct {
-	ID           string                              `json:"id"`
-	Participants map[string]*participant.Participant `json:"participants"`
-	HostID       string                              `json:"host_id"`
-}
-
-func CreateRoom() (*Room, error) {
+func CreateRoom() (string, error) {
 	roomID := uuid.New().String()
-
-	newRoom := &Room{
-		ID:           roomID,
-		Participants: make(map[string]*participant.Participant),
-	}
 
 	pipe := rdb.Client().TxPipeline()
 	pipe.HSet(rdb.Context(), "room:"+roomID, map[string]any{"id": roomID})
@@ -36,10 +25,10 @@ func CreateRoom() (*Room, error) {
 
 	_, err := pipe.Exec(rdb.Context())
 	if err != nil {
-		return nil, fmt.Errorf("error creating room: %w", err)
+		return "", fmt.Errorf("error creating room: %w", err)
 	}
 
-	return newRoom, nil
+	return roomID, nil
 }
 
 func JoinRoom(roomID string) (*participant.Participant, error) {
@@ -268,15 +257,11 @@ func GetHost(roomID string) (string, error) {
 	return hostID, err
 }
 
-func GetRoom(id string) (*Room, error) {
+func GetRoom(id string) (string, error) {
 	roomData, err := rdb.Client().HGetAll(rdb.Context(), "room:"+id).Result()
 	if err != nil || len(roomData) == 0 {
-		return nil, err
+		return "", err
 	}
 
-	room := &Room{
-		ID: roomData["id"],
-	}
-
-	return room, nil
+	return roomData["id"], nil
 }

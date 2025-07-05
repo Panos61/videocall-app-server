@@ -12,19 +12,19 @@ func SetInvitationHandler(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("room_id")
 
 	existingRoom, err := room.GetRoom(roomID)
-	if existingRoom == nil || err != nil {
+	if err != nil {
 		http.Error(w, "room not found", http.StatusNotFound)
 		return
 	}
 
-	invitationCode := room.GenerateInvitationCode(existingRoom.ID)
-	invitationURL, err := room.SetInvitation(existingRoom.ID, invitationCode)
+	invitationCode := room.GenerateInvitationCode(existingRoom)
+	invitationURL, err := room.SetInvitation(existingRoom, invitationCode)
 	if err != nil {
 		http.Error(w, "failed to set invKey to this room", http.StatusInternalServerError)
 		return
 	}
 
-	err = room.InvitationCodeReverseIndex(invitationCode, existingRoom.ID)
+	err = room.InvitationCodeReverseIndex(invitationCode, existingRoom)
 	if err != nil {
 		http.Error(w, "failed to create reverse index for invitation key.", http.StatusInternalServerError)
 		return
