@@ -1,7 +1,6 @@
 package room
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"server/internal/participant"
@@ -38,26 +37,15 @@ func JoinRoom(roomID string) (*participant.Participant, error) {
 		IsHost:   false,
 	}
 
-	media := map[string]bool{
-		"audio": false,
-		"video": false,
-	}
-
-	mediaJSON, err := json.Marshal(media)
-	if err != nil {
-		return nil, err
-	}
-
 	pipe := rdb.Client().TxPipeline()
 	pipe.SAdd(rdb.Context(), "room:"+roomID+":participants", participant.ID)
 	pipe.HMSet(rdb.Context(), "room:"+roomID+":participant:"+participant.ID, map[string]any{
 		"id":       participant.ID,
 		"username": participant.Username,
 		"isHost":   participant.IsHost,
-		"media":    string(mediaJSON),
 	})
 
-	_, err = pipe.Exec(rdb.Context())
+	_, err := pipe.Exec(rdb.Context())
 	if err != nil {
 		return nil, fmt.Errorf("error setting host participant: %w", err)
 	}
@@ -77,26 +65,15 @@ func SetHostParticipant(roomID string) (*participant.Participant, error) {
 		IsHost: true,
 	}
 
-	media := map[string]bool{
-		"audio": false,
-		"video": false,
-	}
-
-	mediaJSON, err := json.Marshal(media)
-	if err != nil {
-		return nil, err
-	}
-
 	pipe := rdb.Client().TxPipeline()
 	pipe.SAdd(rdb.Context(), "room:"+roomID+":participants", participant.ID)
 	pipe.HMSet(rdb.Context(), "room:"+roomID+":participant:"+participant.ID, map[string]any{
 		"id":     participant.ID,
 		"isHost": participant.IsHost,
-		"media":  mediaJSON,
 	})
 	pipe.HSet(rdb.Context(), "room:"+roomID, "host_id", participant.ID)
 
-	_, err = pipe.Exec(rdb.Context())
+	_, err := pipe.Exec(rdb.Context())
 	if err != nil {
 		return nil, fmt.Errorf("error setting host participant: %w", err)
 	}
@@ -149,6 +126,7 @@ func LeaveRoom(roomID, participantID string) (bool, error) {
 
 	if len(participantIDs) == 1 {
 		pipe.Del(rdb.Context(), "room:"+roomID)
+		pipe.Del(rdb.Context(), "room:"+roomID+":settings")
 		pipe.Del(rdb.Context(), "room:"+roomID+":participants")
 	}
 
