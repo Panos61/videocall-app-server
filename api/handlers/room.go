@@ -16,7 +16,7 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hostParticipant, err := room.SetHostParticipant(newRoom.ID)
+	hostParticipant, err := room.SetHostParticipant(newRoom)
 	if err != nil {
 		http.Error(w, "failed to set host participant", http.StatusInternalServerError)
 		return
@@ -36,7 +36,7 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &jwtCookie)
 
 	response := map[string]interface{}{
-		"id":           newRoom.ID,
+		"id":           newRoom,
 		"participants": *hostParticipant,
 	}
 

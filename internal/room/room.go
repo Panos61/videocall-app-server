@@ -1,7 +1,6 @@
 package room
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"server/internal/participant"
@@ -13,22 +12,11 @@ import (
 	"github.com/google/uuid"
 )
 
-type Room struct {
-	ID           string                              `json:"id"`
-	Participants map[string]*participant.Participant `json:"participants"`
-	HostID       string                              `json:"host_id"`
-}
-
-func CreateRoom() (*Room, error) {
+func CreateRoom() (string, error) {
 	roomID := uuid.New().String()
 
-	newRoom := &Room{
-		ID:           roomID,
-		Participants: make(map[string]*participant.Participant),
-	}
-
 	pipe := rdb.Client().TxPipeline()
-	pipe.HSet(rdb.Context(), "room:"+roomID, map[string]any{"id": roomID})
+	pipe.HSet(rdb.Context(), "room:"+roomID, map[string]any{"id": roomID, "created_at": time.Now().Unix()})
 	pipe.HSet(rdb.Context(), "room:"+roomID+":settings", map[string]any{
 		"invitation_expiry": "30",
 		"invite_permission": false,
@@ -36,10 +24,10 @@ func CreateRoom() (*Room, error) {
 
 	_, err := pipe.Exec(rdb.Context())
 	if err != nil {
-		return nil, fmt.Errorf("error creating room: %w", err)
+		return "", fmt.Errorf("error creating room: %w", err)
 	}
 
-	return newRoom, nil
+	return roomID, nil
 }
 
 func JoinRoom(roomID string) (*participant.Participant, error) {
@@ -49,26 +37,15 @@ func JoinRoom(roomID string) (*participant.Participant, error) {
 		IsHost:   false,
 	}
 
-	media := map[string]bool{
-		"audio": false,
-		"video": false,
-	}
-
-	mediaJSON, err := json.Marshal(media)
-	if err != nil {
-		return nil, err
-	}
-
 	pipe := rdb.Client().TxPipeline()
 	pipe.SAdd(rdb.Context(), "room:"+roomID+":participants", participant.ID)
 	pipe.HMSet(rdb.Context(), "room:"+roomID+":participant:"+participant.ID, map[string]any{
 		"id":       participant.ID,
 		"username": participant.Username,
 		"isHost":   participant.IsHost,
-		"media":    string(mediaJSON),
 	})
 
-	_, err = pipe.Exec(rdb.Context())
+	_, err := pipe.Exec(rdb.Context())
 	if err != nil {
 		return nil, fmt.Errorf("error setting host participant: %w", err)
 	}
@@ -88,26 +65,15 @@ func SetHostParticipant(roomID string) (*participant.Participant, error) {
 		IsHost: true,
 	}
 
-	media := map[string]bool{
-		"audio": false,
-		"video": false,
-	}
-
-	mediaJSON, err := json.Marshal(media)
-	if err != nil {
-		return nil, err
-	}
-
 	pipe := rdb.Client().TxPipeline()
 	pipe.SAdd(rdb.Context(), "room:"+roomID+":participants", participant.ID)
 	pipe.HMSet(rdb.Context(), "room:"+roomID+":participant:"+participant.ID, map[string]any{
 		"id":     participant.ID,
 		"isHost": participant.IsHost,
-		"media":  mediaJSON,
 	})
 	pipe.HSet(rdb.Context(), "room:"+roomID, "host_id", participant.ID)
 
-	_, err = pipe.Exec(rdb.Context())
+	_, err := pipe.Exec(rdb.Context())
 	if err != nil {
 		return nil, fmt.Errorf("error setting host participant: %w", err)
 	}
@@ -160,6 +126,7 @@ func LeaveRoom(roomID, participantID string) (bool, error) {
 
 	if len(participantIDs) == 1 {
 		pipe.Del(rdb.Context(), "room:"+roomID)
+		pipe.Del(rdb.Context(), "room:"+roomID+":settings")
 		pipe.Del(rdb.Context(), "room:"+roomID+":participants")
 	}
 
@@ -268,15 +235,11 @@ func GetHost(roomID string) (string, error) {
 	return hostID, err
 }
 
-func GetRoom(id string) (*Room, error) {
+func GetRoom(id string) (string, error) {
 	roomData, err := rdb.Client().HGetAll(rdb.Context(), "room:"+id).Result()
 	if err != nil || len(roomData) == 0 {
-		return nil, err
+		return "", err
 	}
 
-	room := &Room{
-		ID: roomData["id"],
-	}
-
-	return room, nil
+	return roomData["id"], nil
 }
