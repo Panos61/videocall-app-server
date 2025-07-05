@@ -17,7 +17,7 @@ func CreateRoom() (string, error) {
 	roomID := uuid.New().String()
 
 	pipe := rdb.Client().TxPipeline()
-	pipe.HSet(rdb.Context(), "room:"+roomID, map[string]any{"id": roomID})
+	pipe.HSet(rdb.Context(), "room:"+roomID, map[string]any{"id": roomID, "created_at": time.Now().Unix()})
 	pipe.HSet(rdb.Context(), "room:"+roomID+":settings", map[string]any{
 		"invitation_expiry": "30",
 		"invite_permission": false,
