@@ -68,3 +68,16 @@ func SetSessionHandler(w http.ResponseWriter, r *http.Request) {
 
 	utils.JSONResponse(w, sessionID, http.StatusOK)
 }
+
+func GuestsHandler(w http.ResponseWriter, r *http.Request) {
+	roomID := r.PathValue("room_id")
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		http.Error(w, "failed to upgrade to websocket", http.StatusInternalServerError)
+		return
+	}
+	defer conn.Close()
+
+	participant.GuestsSubscription(roomID, conn)
+}

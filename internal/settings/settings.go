@@ -95,7 +95,6 @@ func SettingsSubscription(roomID string, conn *websocket.Conn) {
 			_, _, err := conn.ReadMessage()
 			if err != nil {
 				// Connection was closed or there was an error
-				fmt.Println("read error:", err)
 				return
 			}
 		}
