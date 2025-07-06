@@ -32,7 +32,6 @@ func UserEventSubscription(roomID string, participantID string, conn *websocket.
 			_, _, err := conn.ReadMessage()
 			if err != nil {
 				// Connection was closed or there was an error
-				fmt.Println("read error:", err)
 				return
 			}
 		}
