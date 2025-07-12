@@ -136,6 +136,7 @@ func LeaveRoom(roomID, participantID string) (bool, error) {
 
 	if len(participantIDs) == 1 {
 		pipe.Del(rdb.Context(), "room:"+roomID)
+		pipe.Del(rdb.Context(), "room:"+roomID+":call")
 		pipe.Del(rdb.Context(), "room:"+roomID+":settings")
 		pipe.Del(rdb.Context(), "room:"+roomID+":participants")
 	}

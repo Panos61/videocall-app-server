@@ -28,6 +28,7 @@ func GetParticipant(roomID, participantID string) (*participant.Participant, err
 	return participant, nil
 }
 
+// todo: fix N+1
 func GetCallParticipants(roomID string) ([]*participant.Participant, error) {
 	participantsID, err := rdb.Client().SMembers(rdb.Context(), "room:"+roomID+":participants").Result()
 	if err != nil {

@@ -1,45 +1,16 @@
 package api
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
-	"server/internal/participant"
-	"server/internal/room"
+	"server/internal/call"
 	"server/internal/utils"
 	"strings"
 )
 
-type reqBody struct {
-	Username  string `json:"username"`
-	AvatarSrc string `json:"avatar_src"`
-}
-
-type StartCallResponse struct {
-	RoomID      string                   `json:"room_id"`
-	Participant *participant.Participant `json:"participant"`
-}
-
 func StartCallHandler(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("room_id")
-
-	_, err := room.GetRoom(roomID)
-	if err != nil {
-		http.Error(w, "room not found", http.StatusNotFound)
-		return
-	}
-
-	var payload reqBody
-
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	err = json.Unmarshal(body, &payload)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+	if roomID == "" {
+		http.Error(w, "room ID is required", http.StatusBadRequest)
 		return
 	}
 
@@ -55,16 +26,45 @@ func StartCallHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	participant, err := room.StartCall(roomID, claims.ParticipantID, payload.Username, payload.AvatarSrc)
-	if err != nil {
-		utils.JSONResponse(w, map[string]string{"error": "failed to start call"}, http.StatusBadRequest)
+	if !claims.IsHost {
+		http.Error(w, "only host can start call", http.StatusForbidden)
 		return
 	}
 
-	response := StartCallResponse{
-		RoomID:      roomID,
-		Participant: participant,
+	callState, err := call.StartCall(roomID, claims.ParticipantID)
+	if err != nil {
+		http.Error(w, "failed to start call", http.StatusInternalServerError)
+		return
 	}
 
-	utils.JSONResponse(w, response, http.StatusOK)
+	utils.JSONResponse(w, callState, http.StatusOK)
+}
+
+func GetCallStateHandler(w http.ResponseWriter, r *http.Request) {
+	roomID := r.PathValue("room_id")
+	if roomID == "" {
+		http.Error(w, "room ID is required", http.StatusBadRequest)
+		return
+	}
+
+	callState, err := call.GetCallState(roomID)
+	if err != nil {
+		http.Error(w, "failed to get call state", http.StatusInternalServerError)
+		return
+	}
+
+	utils.JSONResponse(w, callState, http.StatusOK)
+}
+
+func CallBroadcastHandler(w http.ResponseWriter, r *http.Request) {
+	roomID := r.PathValue("room_id")
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		http.Error(w, "failed to upgrade to websocket", http.StatusInternalServerError)
+		return
+	}
+	defer conn.Close()
+
+	call.CallSubscription(roomID, conn)
 }

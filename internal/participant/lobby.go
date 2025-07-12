@@ -84,7 +84,5 @@ func BroadcastGuestsUpdate(roomID string, participants []Guest) (bool, error) {
 		return false, err
 	}
 
-	fmt.Println("participants", participants)
-
 	return true, nil
 }
