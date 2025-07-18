@@ -9,12 +9,15 @@ func InitializeRoutes() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /create-room", CorsMiddleware(http.HandlerFunc(api.CreateRoomHandler)))
+	mux.HandleFunc("/start-call/{room_id}", CorsMiddleware(http.HandlerFunc(api.StartCallHandler)))
 	mux.HandleFunc("/join-room/{room_id}", CorsMiddleware(http.HandlerFunc(api.JoinRoomHandler)))
 	mux.HandleFunc("/leave-room/{room_id}", CorsMiddleware(http.HandlerFunc(api.LeaveRoomHandler)))
 
-	mux.HandleFunc("/start-call/{room_id}", CorsMiddleware(http.HandlerFunc(api.StartCallHandler)))
+	mux.HandleFunc("/call/{room_id}", CorsMiddleware(http.HandlerFunc(api.GetCallStateHandler)))
+	mux.HandleFunc("/set-participant-call-data/{room_id}", CorsMiddleware(http.HandlerFunc(api.SetParticipantCallDataHandler)))
 	mux.HandleFunc("/set-session/{room_id}", CorsMiddleware(http.HandlerFunc(api.SetSessionHandler)))
 
+	mux.HandleFunc("/room-info/{room_id}", CorsMiddleware(http.HandlerFunc(api.GetRoomInfoHandler)))
 	mux.HandleFunc("/get-me/{room_id}", CorsMiddleware(http.HandlerFunc(api.GetMeHandler)))
 	mux.HandleFunc("GET /call-participants/{room_id}", CorsMiddleware(http.HandlerFunc(api.GetCallParticipantsHandler)))
 
@@ -28,6 +31,7 @@ func InitializeRoutes() *http.ServeMux {
 	mux.HandleFunc("/refresh-token", CorsMiddleware(http.HandlerFunc(api.RefreshTokenHandler)))
 
 	mux.HandleFunc("/ws/signalling/{room_id}", CorsMiddleware(http.HandlerFunc(api.SessionHandler)))
+	mux.HandleFunc("/ws/call/{room_id}", CorsMiddleware(http.HandlerFunc(api.CallBroadcastHandler)))
 	mux.HandleFunc("/ws/media/{room_id}", CorsMiddleware(http.HandlerFunc(api.MediaHandler)))
 	mux.HandleFunc("/ws/settings-broadcast/{room_id}", CorsMiddleware(http.HandlerFunc(api.SettingsBroadcastHandler)))
 	mux.HandleFunc("/ws/guests/{room_id}", CorsMiddleware(http.HandlerFunc(api.GuestsHandler)))

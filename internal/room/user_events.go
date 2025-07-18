@@ -54,8 +54,6 @@ func UserEventSubscription(roomID string, participantID string, conn *websocket.
 					return
 				}
 
-				fmt.Println("message received", msg.Payload)
-
 				var eventData UserEvent
 				err = json.Unmarshal([]byte(msg.Payload), &eventData)
 				if err != nil {

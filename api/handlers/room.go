@@ -123,6 +123,23 @@ func LeaveRoomHandler(w http.ResponseWriter, r *http.Request) {
 	}, http.StatusOK)
 }
 
+// for now it's just the room created_at timestamp
+func GetRoomInfoHandler(w http.ResponseWriter, r *http.Request) {
+	roomID := r.PathValue("room_id")
+	if roomID == "" {
+		http.Error(w, "room ID is required", http.StatusBadRequest)
+		return
+	}
+
+	roomInfo, err := room.GetInfo(roomID)
+	if err != nil {
+		http.Error(w, "failed to get room info", http.StatusInternalServerError)
+		return
+	}
+
+	utils.JSONResponse(w, roomInfo.CreatedAt, http.StatusOK)
+}
+
 func GetCallParticipantsHandler(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("room_id")
 	if roomID == "" {
