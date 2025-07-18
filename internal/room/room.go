@@ -4,7 +4,24 @@ import (
 	"server/internal/participant"
 	"server/internal/rdb"
 	"strconv"
+	"time"
 )
+
+type RoomInfo struct {
+	CreatedAt time.Time `json:"created_at"`
+}
+
+func GetInfo(roomID string) (RoomInfo, error) {
+	roomData, err := rdb.Client().HGetAll(rdb.Context(), "room:"+roomID).Result()
+	if err != nil {
+		return RoomInfo{}, err
+	}
+
+	createdAtUnix, _ := strconv.ParseInt(roomData["created_at"], 10, 64)
+	createdAt := time.Unix(createdAtUnix, 0)
+
+	return RoomInfo{CreatedAt: createdAt}, nil
+}
 
 func GetParticipant(roomID, participantID string) (*participant.Participant, error) {
 	participantData, err := rdb.Client().HGetAll(rdb.Context(), "room:"+roomID+":participant:"+participantID).Result()

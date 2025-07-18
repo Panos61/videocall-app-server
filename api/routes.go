@@ -17,6 +17,7 @@ func InitializeRoutes() *http.ServeMux {
 	mux.HandleFunc("/set-participant-call-data/{room_id}", CorsMiddleware(http.HandlerFunc(api.SetParticipantCallDataHandler)))
 	mux.HandleFunc("/set-session/{room_id}", CorsMiddleware(http.HandlerFunc(api.SetSessionHandler)))
 
+	mux.HandleFunc("/room-info/{room_id}", CorsMiddleware(http.HandlerFunc(api.GetRoomInfoHandler)))
 	mux.HandleFunc("/get-me/{room_id}", CorsMiddleware(http.HandlerFunc(api.GetMeHandler)))
 	mux.HandleFunc("GET /call-participants/{room_id}", CorsMiddleware(http.HandlerFunc(api.GetCallParticipantsHandler)))
 
