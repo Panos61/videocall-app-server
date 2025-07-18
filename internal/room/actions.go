@@ -155,10 +155,10 @@ func PurgeData(roomID, participantID string, isHost bool) (bool, error) {
 		return false, nil
 	}
 
+	pipe := rdb.Client().TxPipeline()
 	// todo: delete room invitation
 	// if there's only one participant, delete the room
 	if len(participantIDs) == 1 {
-		pipe := rdb.Client().TxPipeline()
 		pipe.Del(rdb.Context(), "room:"+roomID)
 		pipe.Del(rdb.Context(), "room:"+roomID+":call")
 		pipe.Del(rdb.Context(), "room:"+roomID+":settings")
@@ -176,9 +176,12 @@ func PurgeData(roomID, participantID string, isHost bool) (bool, error) {
 	// todo: if host, update host user
 	// ** * **
 	// if guest, delete guest user
-	err = rdb.Client().HDel(rdb.Context(), "room:"+roomID+":participant:"+participantID, "id", "username", "isHost").Err()
+	pipe.SRem(rdb.Context(), "room:"+roomID+":participants", participantID)
+	pipe.HDel(rdb.Context(), "room:"+roomID+":participant:"+participantID, "id", "username", "isHost").Err()
+
+	_, err = pipe.Exec(rdb.Context())
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 
 	return true, nil
