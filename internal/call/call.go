@@ -63,7 +63,9 @@ func GetCallState(roomID string) (CallState, error) {
 	}
 
 	isActive, _ := strconv.ParseBool(callData["is_active"])
-	startedAt, _ := time.Parse(time.RFC3339, callData["started_at"])
+
+	startedAtUnix, _ := strconv.ParseInt(callData["started_at"], 10, 64)
+	startedAt := time.Unix(startedAtUnix, 0)
 
 	return CallState{
 		RoomID:    callData["room_id"],
@@ -104,15 +106,12 @@ func CallSubscription(roomID string, conn *websocket.Conn) {
 			default:
 				msg, err := subscriber.ReceiveMessage(rdb.Context())
 				if err != nil {
-					fmt.Println("error receiving message", err)
 					return
 				}
 
 				var callState CallState
 				err = json.Unmarshal([]byte(msg.Payload), &callState)
-				fmt.Println("callState -->", callState)
 				if err != nil {
-					fmt.Println("error unmarshalling message", err)
 					continue
 				}
 
