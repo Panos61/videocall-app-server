@@ -100,6 +100,7 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 	utils.JSONResponse(w, response, http.StatusOK)
 }
 
+// normal exit from room
 func LeaveRoomHandler(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("room_id")
 
@@ -120,6 +121,34 @@ func LeaveRoomHandler(w http.ResponseWriter, r *http.Request) {
 
 	utils.JSONResponse(w, map[string]bool{
 		"leftRoom": true,
+	}, http.StatusOK)
+}
+
+// used when user leaves the room by navigating away from the page
+// if there's only one participant, delete the room and relevant user data
+// if there's more than one participant, delete the participant data
+func PurgeDataHandler(w http.ResponseWriter, r *http.Request) {
+	roomID := r.PathValue("room_id")
+	if roomID == "" {
+		http.Error(w, "room ID is required", http.StatusBadRequest)
+		return
+	}
+
+	token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	claims, err := utils.ValidateToken(token)
+	if err != nil {
+		http.Error(w, "invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	isDeleted, err := room.PurgeData(roomID, claims.ParticipantID, claims.IsHost)
+	if err != nil {
+		http.Error(w, "failed to delete room and relevant user data", http.StatusInternalServerError)
+		return
+	}
+
+	utils.JSONResponse(w, map[string]bool{
+		"deleted": isDeleted,
 	}, http.StatusOK)
 }
 

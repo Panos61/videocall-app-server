@@ -149,6 +149,44 @@ func LeaveRoom(roomID, participantID string) (bool, error) {
 	return true, nil
 }
 
+func PurgeData(roomID, participantID string, isHost bool) (bool, error) {
+	participantIDs, err := rdb.Client().SMembers(rdb.Context(), "room:"+roomID+":participants").Result()
+	if err != nil {
+		return false, nil
+	}
+
+	pipe := rdb.Client().TxPipeline()
+	// todo: delete room invitation
+	// if there's only one participant, delete the room
+	if len(participantIDs) == 1 {
+		pipe.Del(rdb.Context(), "room:"+roomID)
+		pipe.Del(rdb.Context(), "room:"+roomID+":call")
+		pipe.Del(rdb.Context(), "room:"+roomID+":settings")
+		pipe.Del(rdb.Context(), "room:"+roomID+":participant:"+participantID)
+		pipe.Del(rdb.Context(), "room:"+roomID+":participants")
+
+		_, err := pipe.Exec(rdb.Context())
+		if err != nil {
+			return false, err
+		}
+
+		return true, nil
+	}
+
+	// todo: if host, update host user
+	// ** * **
+	// if guest, delete guest user
+	pipe.SRem(rdb.Context(), "room:"+roomID+":participants", participantID)
+	pipe.HDel(rdb.Context(), "room:"+roomID+":participant:"+participantID, "id", "username", "isHost").Err()
+
+	_, err = pipe.Exec(rdb.Context())
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 func UpdateHost(roomID, previousHostID string, participantIDs []string) (bool, error) {
 	var nonHostParticipants []string
 
