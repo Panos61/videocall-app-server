@@ -21,33 +21,28 @@ func RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 		if err.Error() == "token is expired" {
 			newToken, err := utils.GenerateJWT(claims.ParticipantID, claims.IsHost)
 			if err != nil {
-				utils.JSONResponse(w, map[string]interface{}{
-					"error": "failed to generate token",
-				}, http.StatusInternalServerError)
+				http.Error(w, "failed to generate token", http.StatusInternalServerError)
 				return
 			}
-			utils.JSONResponse(w, map[string]interface{}{
+			utils.JSONResponse(w, map[string]string{
 				"token": newToken,
 			}, http.StatusOK)
 			return
 		}
-		utils.JSONResponse(w, map[string]interface{}{
-			"error": "invalid token",
-		}, http.StatusUnauthorized)
+		http.Error(w, "invalid token", http.StatusUnauthorized)
 		return
 	}
 
-	utils.JSONResponse(w, map[string]interface{}{
-		"token": token,
-	}, http.StatusOK)
+	utils.JSONResponse(w, map[string]string{"token": token}, http.StatusOK)
 }
 
-func ValidateInvitationHandler(w http.ResponseWriter, r *http.Request) {
+func AuthorizationHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	defer r.Body.Close()
 
 	var requestBody struct {
 		RoomID string `json:"room_id"`
@@ -60,38 +55,46 @@ func ValidateInvitationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isValid, roomID, err := room.ValidateInvitation(requestBody.Code)
+	roomID := requestBody.RoomID
+	if roomID == "" {
+		http.Error(w, "missing room_id", http.StatusBadRequest)
+		return
+	}
+	_, err = room.GetRoom(roomID)
 	if err != nil {
-		utils.JSONResponse(w, map[string]interface{}{
-			"isValid":   false,
-			"isExpired": false,
-			"roomID":    "",
-		}, http.StatusUnauthorized)
+		http.Error(w, "room not found", http.StatusNotFound)
 		return
 	}
 
-	isExpired, err := room.IsExpired(requestBody.RoomID)
+	code := requestBody.Code
+	if code == "" {
+		http.Error(w, "missing code", http.StatusBadRequest)
+		return
+	}
+
+	matchesFormat := room.MatchesFormat(code)
+	if !matchesFormat {
+		utils.JSONResponse(w, map[string]bool{
+			"isValid": false,
+		}, http.StatusOK)
+		return
+	}
+
+	hasExpired, err := room.HasExpired(roomID, code)
 	if err != nil {
-		utils.JSONResponse(w, map[string]interface{}{
-			"isValid":   false,
-			"isExpired": true,
-			"roomID":    "",
-		}, http.StatusUnauthorized)
+		http.Error(w, "failed to check if code has expired", http.StatusInternalServerError)
 		return
 	}
 
-	if roomID != requestBody.RoomID {
-		utils.JSONResponse(w, map[string]interface{}{
-			"isValid":   false,
-			"isExpired": false,
-			"roomID":    "",
-		}, http.StatusUnauthorized)
+	if hasExpired {
+		utils.JSONResponse(w, map[string]bool{
+			"hasExpired": true,
+		}, http.StatusOK)
 		return
 	}
 
-	utils.JSONResponse(w, map[string]interface{}{
-		"isValid":   isValid,
-		"IsExpired": isExpired,
-		"roomID":    roomID,
+	utils.JSONResponse(w, map[string]bool{
+		"isValid":    true,
+		"hasExpired": false,
 	}, http.StatusOK)
 }
