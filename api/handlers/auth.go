@@ -36,6 +36,7 @@ func RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 	utils.JSONResponse(w, map[string]string{"token": token}, http.StatusOK)
 }
 
+// todo: invalidate invitation and unauthorize guest, if host has purged room already
 func AuthorizationHandler(w http.ResponseWriter, r *http.Request) {
 	body, err := io.ReadAll(r.Body)
 	if err != nil {

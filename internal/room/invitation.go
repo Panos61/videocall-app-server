@@ -48,6 +48,21 @@ func UpdateInvitationCode(roomID string) (string, error) {
 	return code, nil
 }
 
+func UpdateInvitationTTL(roomID, newExpiryMinutes string) error {
+	exists := rdb.Client().Exists(rdb.Context(), "room:"+roomID+":invitation").Val()
+	if exists == 0 {
+		return nil
+	}
+
+	duration, err := strconv.Atoi(newExpiryMinutes)
+	if err != nil {
+		return err
+	}
+
+	ttl := time.Duration(duration) * time.Minute
+	return rdb.Client().Expire(rdb.Context(), "room:"+roomID+":invitation", ttl).Err()
+}
+
 func GetInvitationCode(roomID string) (string, error) {
 	invitationCode, err := rdb.Client().Get(rdb.Context(), "room:"+roomID+":invitation").Result()
 	if err != nil {
@@ -77,20 +92,7 @@ func HasExpired(roomID, expectedCode string) (bool, error) {
 
 	return actualCode != expectedCode, nil
 }
-func matchesFormat(invitationCode string) bool {
+
+func MatchesFormat(invitationCode string) bool {
 	return codeRegex.MatchString(invitationCode)
-}
-
-func IsCodeValid(roomID, invitationCode string) (bool, bool, error) {
-	hasExpired, err := HasExpired(roomID, invitationCode)
-	if err != nil || hasExpired {
-		return true, false, err
-	}
-
-	matchesFormat := matchesFormat(invitationCode)
-	if !matchesFormat {
-		return false, false, nil
-	}
-
-	return false, true, nil
 }

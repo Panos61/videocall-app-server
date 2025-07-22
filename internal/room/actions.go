@@ -141,6 +141,7 @@ func LeaveRoom(roomID, participantID string) (bool, error) {
 		pipe.Del(rdb.Context(), "room:"+roomID)
 		pipe.Del(rdb.Context(), "room:"+roomID+":call")
 		pipe.Del(rdb.Context(), "room:"+roomID+":settings")
+		pipe.Del(rdb.Context(), "room:"+roomID+":invitation")
 		pipe.Del(rdb.Context(), "room:"+roomID+":participants")
 	}
 
@@ -165,6 +166,7 @@ func PurgeData(roomID, participantID string, isHost bool) (bool, error) {
 		pipe.Del(rdb.Context(), "room:"+roomID)
 		pipe.Del(rdb.Context(), "room:"+roomID+":call")
 		pipe.Del(rdb.Context(), "room:"+roomID+":settings")
+		pipe.Del(rdb.Context(), "room:"+roomID+":invitation")
 		pipe.Del(rdb.Context(), "room:"+roomID+":participant:"+participantID)
 		pipe.Del(rdb.Context(), "room:"+roomID+":participants")
 
