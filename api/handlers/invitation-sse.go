@@ -75,6 +75,7 @@ func SSEInvitationHandler(w http.ResponseWriter, r *http.Request) {
 	// Listen for client disconnect
 	notify := r.Context().Done()
 
+	// Checks expiration every 5 minutes
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
@@ -83,27 +84,21 @@ func SSEInvitationHandler(w http.ResponseWriter, r *http.Request) {
 		case <-notify:
 			return
 		case <-ticker.C:
-			isExpired, err := room.IsExpired(roomID)
+			code, _ := room.GetInvitationCode(roomID)
+			hasExpired, err := room.HasExpired(roomID, code)
 			if err != nil {
 				broadcastToClients(roomID, fmt.Sprintf("event: error\ndata: %v\n\n", err))
 				return
 			}
 
-			if isExpired {
-				newCode := room.GenerateInvitationCode(roomID)
-				invitationURL, err := room.SetInvitation(roomID, newCode)
+			if hasExpired {
+				newCode, err := room.UpdateInvitationCode(roomID)
 				if err != nil {
 					broadcastToClients(roomID, fmt.Sprintf("event: error\ndata: %v\n\n", err))
 					return
 				}
 
-				broadcastToClients(roomID, invitationURL)
-
-				err = room.InvitationCodeReverseIndex(newCode, roomID)
-				if err != nil {
-					broadcastToClients(roomID, fmt.Sprintf("event: error\ndata: %v\n\n", err))
-					return
-				}
+				broadcastToClients(roomID, newCode)
 			}
 		}
 	}

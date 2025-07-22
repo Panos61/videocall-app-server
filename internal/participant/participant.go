@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"server/internal/rdb"
 	"strconv"
-	"time"
 )
 
 type Participant struct {
@@ -39,23 +38,4 @@ func GetMe(roomID, participantID string) (*Participant, error) {
 	}
 
 	return &participant, nil
-}
-
-// Check if user is authorized to join the room
-func IsUserAuthorized(roomID string) (bool, error) {
-	if roomID == "" {
-		return false, nil
-	}
-
-	expiresIn, err := rdb.Client().HGet(rdb.Context(), "room:"+roomID, "expiresIn").Result()
-	if err != nil {
-		return false, err
-	}
-
-	expirationTime, err := time.Parse(time.RFC3339, expiresIn)
-	if err != nil {
-		return false, err
-	}
-
-	return !time.Now().After(expirationTime), nil
 }

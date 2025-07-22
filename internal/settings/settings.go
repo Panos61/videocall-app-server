@@ -57,6 +57,15 @@ func GetRoomSettings(roomID string) (Settings, error) {
 	return settings, nil
 }
 
+func GetInvitationExpiry(roomID string) (string, error) {
+	invExpiry, err := rdb.Client().HGet(rdb.Context(), "room:"+roomID+":settings", "invitation_expiry").Result()
+	if err != nil {
+		return "", err
+	}
+
+	return invExpiry, nil
+}
+
 func UpdateRoomSettings(roomID string, settings Settings) (Settings, error) {
 	_, err := rdb.Client().HSet(rdb.Context(), "room:"+roomID+":settings", map[string]any{
 		"strict_mode":       settings.StrictMode,

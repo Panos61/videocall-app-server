@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"server/internal/room"
 	"server/internal/settings"
 	"server/internal/utils"
 )
@@ -23,11 +24,18 @@ func GetRoomSettingsHandler(w http.ResponseWriter, r *http.Request) {
 func UpdateRoomSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("room_id")
 
+	currentInvitationExpiry, err := settings.GetInvitationExpiry(roomID)
+	if err != nil {
+		http.Error(w, "failed to get current invitation expiry", http.StatusInternalServerError)
+		return
+	}
+
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "failed to read request body", http.StatusBadRequest)
 		return
 	}
+	defer r.Body.Close()
 
 	var requestBody struct {
 		Settings settings.Settings `json:"settings"`
@@ -45,6 +53,15 @@ func UpdateRoomSettingsHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "failed to update room settings", http.StatusInternalServerError)
 		return
+	}
+
+	// Update invitation TTL if expiry changed
+	if currentInvitationExpiry != updatedSettings.InvitationExpiry {
+		err := room.UpdateInvitationTTL(roomID, updatedSettings.InvitationExpiry)
+		if err != nil {
+			http.Error(w, "failed to update invitation expiry", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	utils.JSONResponse(w, updatedSettings, http.StatusOK)

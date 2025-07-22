@@ -1,7 +1,6 @@
 package api
 
 import (
-	"encoding/json"
 	"net/http"
 	"server/internal/participant"
 	"server/internal/room"
@@ -50,17 +49,7 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isAuthorized, err := participant.IsUserAuthorized(roomID)
-	if err != nil {
-		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"isAuthorized": false,
-			"roomID":       "",
-		})
-		return
-	}
-
-	_, err = room.GetRoom(roomID)
+	_, err := room.GetRoom(roomID)
 	if err != nil {
 		http.Error(w, "room not found", http.StatusNotFound)
 		return
@@ -68,33 +57,29 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 
 	var joinedParticipant *participant.Participant
 
-	if isAuthorized {
-		joinedParticipant, err = room.JoinRoom(roomID)
-		if err != nil {
-			http.Error(w, "failed to join room", http.StatusInternalServerError)
-		}
-
-		jwtCookie := http.Cookie{
-			Name:     "jwt-cookie",
-			Value:    joinedParticipant.Token,
-			MaxAge:   3600,
-			HttpOnly: true,
-			Secure:   true,
-			Path:     "/",
-			Domain:   "",
-			SameSite: http.SameSiteLaxMode,
-		}
-		http.SetCookie(w, &jwtCookie)
+	joinedParticipant, err = room.JoinRoom(roomID)
+	if err != nil {
+		http.Error(w, "failed to join room", http.StatusInternalServerError)
 	}
 
+	jwtCookie := http.Cookie{
+		Name:     "jwt-cookie",
+		Value:    joinedParticipant.Token,
+		MaxAge:   3600,
+		HttpOnly: true,
+		Secure:   true,
+		Path:     "/",
+		Domain:   "",
+		SameSite: http.SameSiteLaxMode,
+	}
+	http.SetCookie(w, &jwtCookie)
+
 	response := struct {
-		IsAuthorized bool                     `json:"isAuthorized"`
-		RoomID       string                   `json:"room_id"`
-		Participant  *participant.Participant `json:"participant"`
+		RoomID      string                   `json:"room_id"`
+		Participant *participant.Participant `json:"participant"`
 	}{
-		IsAuthorized: isAuthorized,
-		RoomID:       roomID,
-		Participant:  joinedParticipant,
+		RoomID:      roomID,
+		Participant: joinedParticipant,
 	}
 
 	utils.JSONResponse(w, response, http.StatusOK)

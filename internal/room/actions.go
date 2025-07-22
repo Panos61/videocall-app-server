@@ -14,8 +14,11 @@ import (
 func CreateRoom() (string, error) {
 	roomID := uuid.New().String()
 
+	code := GenerateCode()
+
 	pipe := rdb.Client().TxPipeline()
 	pipe.HSet(rdb.Context(), "room:"+roomID, map[string]any{"id": roomID, "created_at": time.Now().Unix()})
+	pipe.Set(rdb.Context(), "room:"+roomID+":invitation", code, 30*time.Minute)
 	pipe.HSet(rdb.Context(), "room:"+roomID+":settings", map[string]any{
 		"invitation_expiry": "30",
 		"invite_permission": false,
@@ -138,6 +141,7 @@ func LeaveRoom(roomID, participantID string) (bool, error) {
 		pipe.Del(rdb.Context(), "room:"+roomID)
 		pipe.Del(rdb.Context(), "room:"+roomID+":call")
 		pipe.Del(rdb.Context(), "room:"+roomID+":settings")
+		pipe.Del(rdb.Context(), "room:"+roomID+":invitation")
 		pipe.Del(rdb.Context(), "room:"+roomID+":participants")
 	}
 
@@ -162,6 +166,7 @@ func PurgeData(roomID, participantID string, isHost bool) (bool, error) {
 		pipe.Del(rdb.Context(), "room:"+roomID)
 		pipe.Del(rdb.Context(), "room:"+roomID+":call")
 		pipe.Del(rdb.Context(), "room:"+roomID+":settings")
+		pipe.Del(rdb.Context(), "room:"+roomID+":invitation")
 		pipe.Del(rdb.Context(), "room:"+roomID+":participant:"+participantID)
 		pipe.Del(rdb.Context(), "room:"+roomID+":participants")
 
