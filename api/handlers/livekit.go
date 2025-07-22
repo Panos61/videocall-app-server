@@ -1,7 +1,6 @@
 package api
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -57,8 +56,6 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				break
 			}
-
-			fmt.Println("livekitToken", livekitToken)
 
 			conn.WriteJSON(Message{
 				Type:        "livekit_session_token",
