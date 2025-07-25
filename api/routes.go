@@ -9,10 +9,10 @@ func InitializeRoutes() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /create-room", CorsMiddleware(http.HandlerFunc(api.CreateRoomHandler)))
-	mux.HandleFunc("/start-call/{room_id}", CorsMiddleware(http.HandlerFunc(api.StartCallHandler)))
 	mux.HandleFunc("/join-room/{room_id}", CorsMiddleware(http.HandlerFunc(api.JoinRoomHandler)))
-	mux.HandleFunc("/leave-room/{room_id}", CorsMiddleware(http.HandlerFunc(api.LeaveRoomHandler)))
-	mux.HandleFunc("/purge-data/{room_id}", CorsMiddleware(http.HandlerFunc(api.PurgeDataHandler)))
+	mux.HandleFunc("/exit-room/{room_id}", CorsMiddleware(http.HandlerFunc(api.ExitRoomHandler)))
+	mux.HandleFunc("/start-call/{room_id}", CorsMiddleware(http.HandlerFunc(api.StartCallHandler)))
+	mux.HandleFunc("/leave-call/{room_id}", CorsMiddleware(http.HandlerFunc(api.LeaveCallHandler)))
 
 	mux.HandleFunc("/call/{room_id}", CorsMiddleware(http.HandlerFunc(api.GetCallStateHandler)))
 	mux.HandleFunc("/set-participant-call-data/{room_id}", CorsMiddleware(http.HandlerFunc(api.SetParticipantCallDataHandler)))

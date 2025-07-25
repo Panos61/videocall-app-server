@@ -3,6 +3,7 @@ package call
 import (
 	"encoding/json"
 	"fmt"
+	"server/internal/participant"
 	"server/internal/rdb"
 	"strconv"
 	"time"
@@ -45,6 +46,47 @@ func StartCall(roomID, participantID string) (CallState, error) {
 	}
 
 	return callState, nil
+}
+
+func LeaveCall(roomID, participantID string) (bool, error) {
+	participant, err := participant.GetParticipant(roomID, participantID)
+	if err != nil {
+		return false, nil
+	}
+
+	participantIDs, err := rdb.Client().SMembers(rdb.Context(), "room:"+roomID+":participants").Result()
+	if err != nil {
+		return false, nil
+	}
+
+	pipe := rdb.Client().TxPipeline()
+	pipe.Del(rdb.Context(), "session:"+participant.SessionID)
+	pipe.HDel(rdb.Context(), "room:"+roomID+":participant:"+participant.ID, "session_id")
+
+	// if len(participantIDs) != 1 {
+	// 	if participant.IsHost {
+	// 		_, err := notifyHostLeft(roomID, participant)
+	// 		if err != nil {
+	// 			return false, err
+	// 		}
+	// 	} else {
+	// 		_, err := notifyUserLeft(roomID, participant)
+	// 		if err != nil {
+	// 			return false, err
+	// 		}
+	// 	}
+	// }
+
+	if len(participantIDs) == 1 {
+		pipe.Del(rdb.Context(), "call:"+roomID)
+	}
+
+	_, err = pipe.Exec(rdb.Context())
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func GetCallState(roomID string) (CallState, error) {
