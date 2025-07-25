@@ -85,7 +85,6 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 	utils.JSONResponse(w, response, http.StatusOK)
 }
 
-// used when user leaves the room by navigating away from the page
 // if there's only one participant, delete the room and relevant user data
 // if there's more than one participant, delete the participant data
 func ExitRoomHandler(w http.ResponseWriter, r *http.Request) {
@@ -102,14 +101,14 @@ func ExitRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	isDeleted, err := room.ExitRoom(roomID, claims.ParticipantID, claims.IsHost)
+	hasExited, err := room.ExitRoom(roomID, claims.ParticipantID, claims.IsHost)
 	if err != nil {
-		http.Error(w, "failed to delete room and relevant user data", http.StatusInternalServerError)
+		http.Error(w, "failed to exit room", http.StatusInternalServerError)
 		return
 	}
 
 	utils.JSONResponse(w, map[string]bool{
-		"deleted": isDeleted,
+		"exitedRoom": hasExited,
 	}, http.StatusOK)
 }
 

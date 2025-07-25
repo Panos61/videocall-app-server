@@ -71,7 +71,6 @@ func GetCallParticipants(roomID string) ([]*Participant, error) {
 
 	participants := make([]*Participant, 0, len(participantsID))
 	for _, participantID := range participantsID {
-		fmt.Println("participantID", participantID)
 		participantData, err := rdb.Client().HGetAll(rdb.Context(), "room:"+roomID+":participant:"+participantID).Result()
 		if err != nil {
 			return nil, err
@@ -96,7 +95,6 @@ func GetCallParticipants(roomID string) ([]*Participant, error) {
 		}
 
 		participants = append(participants, participant)
-		fmt.Println(participants)
 	}
 
 	return participants, err

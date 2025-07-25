@@ -60,8 +60,7 @@ func LeaveCall(roomID, participantID string, isHost bool) (bool, error) {
 		return false, nil
 	}
 
-	pipe := rdb.Client().TxPipeline()
-	pipe.Del(rdb.Context(), "session:"+participant.SessionID)
+	rdb.Client().Del(rdb.Context(), "session:"+participant.SessionID)
 	if isHost {
 		_, err := room.UpdateHost(roomID, participant.ID, participantIDs)
 		if err != nil {
@@ -84,12 +83,7 @@ func LeaveCall(roomID, participantID string, isHost bool) (bool, error) {
 	// }
 
 	if len(participantIDs) == 1 {
-		pipe.Del(rdb.Context(), "room:"+roomID+":call")
-	}
-
-	_, err = pipe.Exec(rdb.Context())
-	if err != nil {
-		return false, err
+		rdb.Client().Del(rdb.Context(), "call:"+roomID)
 	}
 
 	return true, nil

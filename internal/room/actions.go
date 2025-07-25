@@ -111,7 +111,6 @@ func ExitRoom(roomID, participantID string, isHost bool) (bool, error) {
 	// if there's only one participant, delete the room and relevant data
 	if len(participantIDs) == 1 {
 		pipe.Del(rdb.Context(), "room:"+roomID)
-		pipe.Del(rdb.Context(), "room:"+roomID+":call")
 		pipe.Del(rdb.Context(), "room:"+roomID+":settings")
 		pipe.Del(rdb.Context(), "room:"+roomID+":invitation")
 		pipe.Del(rdb.Context(), "room:"+roomID+":participant:"+participantID)
