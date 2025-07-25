@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"server/internal/participant"
 	"server/internal/rdb"
-	"server/internal/room"
 	"strconv"
 	"time"
 
@@ -49,7 +48,7 @@ func StartCall(roomID, participantID string) (CallState, error) {
 	return callState, nil
 }
 
-func LeaveCall(roomID, participantID string, isHost bool) (bool, error) {
+func LeaveCall(roomID, participantID string) (bool, error) {
 	participant, err := participant.GetParticipant(roomID, participantID)
 	if err != nil {
 		return false, nil
@@ -60,13 +59,9 @@ func LeaveCall(roomID, participantID string, isHost bool) (bool, error) {
 		return false, nil
 	}
 
-	rdb.Client().Del(rdb.Context(), "session:"+participant.SessionID)
-	if isHost {
-		_, err := room.UpdateHost(roomID, participant.ID, participantIDs)
-		if err != nil {
-			return false, nil
-		}
-	}
+	pipe := rdb.Client().TxPipeline()
+	pipe.Del(rdb.Context(), "session:"+participant.SessionID)
+	pipe.HDel(rdb.Context(), "room:"+roomID+":participant:"+participant.ID, "session_id")
 
 	// if len(participantIDs) != 1 {
 	// 	if participant.IsHost {
@@ -83,7 +78,12 @@ func LeaveCall(roomID, participantID string, isHost bool) (bool, error) {
 	// }
 
 	if len(participantIDs) == 1 {
-		rdb.Client().Del(rdb.Context(), "call:"+roomID)
+		pipe.Del(rdb.Context(), "call:"+roomID)
+	}
+
+	_, err = pipe.Exec(rdb.Context())
+	if err != nil {
+		return false, err
 	}
 
 	return true, nil

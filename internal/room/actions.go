@@ -136,7 +136,7 @@ func ExitRoom(roomID, participantID string, isHost bool) (bool, error) {
 	}
 
 	pipe.SRem(rdb.Context(), "room:"+roomID+":participants", participantID)
-	pipe.HDel(rdb.Context(), "room:"+roomID+":participant:"+participantID, "id", "username", "isHost").Err()
+	pipe.Del(rdb.Context(), "room:"+roomID+":participant:"+participantID)
 
 	_, err = pipe.Exec(rdb.Context())
 	if err != nil {

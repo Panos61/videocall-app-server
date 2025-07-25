@@ -50,7 +50,7 @@ func LeaveCallHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = call.LeaveCall(roomID, claims.ParticipantID, claims.IsHost)
+	_, err = call.LeaveCall(roomID, claims.ParticipantID)
 	if err != nil {
 		utils.JSONResponse(w, map[string]bool{
 			"leftCall": false,
