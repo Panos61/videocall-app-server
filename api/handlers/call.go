@@ -40,6 +40,29 @@ func StartCallHandler(w http.ResponseWriter, r *http.Request) {
 	utils.JSONResponse(w, callState, http.StatusOK)
 }
 
+func LeaveCallHandler(w http.ResponseWriter, r *http.Request) {
+	roomID := r.PathValue("room_id")
+
+	token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	claims, err := utils.ValidateToken(token)
+	if err != nil {
+		http.Error(w, "invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	_, err = call.LeaveCall(roomID, claims.ParticipantID, claims.IsHost)
+	if err != nil {
+		utils.JSONResponse(w, map[string]bool{
+			"leftCall": false,
+		}, http.StatusBadRequest)
+		return
+	}
+
+	utils.JSONResponse(w, map[string]bool{
+		"leftCall": true,
+	}, http.StatusOK)
+}
+
 func GetCallStateHandler(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("room_id")
 	if roomID == "" {

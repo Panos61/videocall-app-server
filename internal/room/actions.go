@@ -101,67 +101,14 @@ func SetHostParticipant(roomID string) (*participant.Participant, error) {
 	return participant, nil
 }
 
-func LeaveRoom(roomID, participantID string) (bool, error) {
-	participant, err := GetParticipant(roomID, participantID)
-	if err != nil {
-		return false, nil
-	}
-
+func ExitRoom(roomID, participantID string, isHost bool) (bool, error) {
 	participantIDs, err := rdb.Client().SMembers(rdb.Context(), "room:"+roomID+":participants").Result()
 	if err != nil {
 		return false, nil
 	}
 
 	pipe := rdb.Client().TxPipeline()
-	pipe.Del(rdb.Context(), "room:"+roomID+":participant:"+participantID)
-	pipe.SRem(rdb.Context(), "room:"+roomID+":participants", participant.ID)
-	pipe.Del(rdb.Context(), "session:"+participant.SessionID)
-	if participant.IsHost {
-		_, err := UpdateHost(roomID, participant.ID, participantIDs)
-		if err != nil {
-			return false, nil
-		}
-	}
-
-	if len(participantIDs) != 1 {
-		if participant.IsHost {
-			_, err := notifyHostLeft(roomID, participant)
-			if err != nil {
-				return false, err
-			}
-		} else {
-			_, err := notifyUserLeft(roomID, participant)
-			if err != nil {
-				return false, err
-			}
-		}
-	}
-
-	if len(participantIDs) == 1 {
-		pipe.Del(rdb.Context(), "room:"+roomID)
-		pipe.Del(rdb.Context(), "room:"+roomID+":call")
-		pipe.Del(rdb.Context(), "room:"+roomID+":settings")
-		pipe.Del(rdb.Context(), "room:"+roomID+":invitation")
-		pipe.Del(rdb.Context(), "room:"+roomID+":participants")
-	}
-
-	_, err = pipe.Exec(rdb.Context())
-	if err != nil {
-		return false, err
-	}
-
-	return true, nil
-}
-
-func PurgeData(roomID, participantID string, isHost bool) (bool, error) {
-	participantIDs, err := rdb.Client().SMembers(rdb.Context(), "room:"+roomID+":participants").Result()
-	if err != nil {
-		return false, nil
-	}
-
-	pipe := rdb.Client().TxPipeline()
-	// todo: delete room invitation
-	// if there's only one participant, delete the room
+	// if there's only one participant, delete the room and relevant data
 	if len(participantIDs) == 1 {
 		pipe.Del(rdb.Context(), "room:"+roomID)
 		pipe.Del(rdb.Context(), "room:"+roomID+":call")
@@ -178,9 +125,17 @@ func PurgeData(roomID, participantID string, isHost bool) (bool, error) {
 		return true, nil
 	}
 
-	// todo: if host, update host user
-	// ** * **
-	// if guest, delete guest user
+	if isHost {
+		hostUpdated, err := UpdateHost(roomID, participantID, participantIDs)
+		if err != nil {
+			return false, err
+		}
+
+		if !hostUpdated {
+			return false, nil
+		}
+	}
+
 	pipe.SRem(rdb.Context(), "room:"+roomID+":participants", participantID)
 	pipe.HDel(rdb.Context(), "room:"+roomID+":participant:"+participantID, "id", "username", "isHost").Err()
 
