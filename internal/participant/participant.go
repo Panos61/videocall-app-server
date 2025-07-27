@@ -62,40 +62,65 @@ func GetParticipant(roomID, participantID string) (*Participant, error) {
 	return participant, nil
 }
 
-// todo: fix N+1
-func GetCallParticipants(roomID string) ([]*Participant, error) {
-	participantsID, err := rdb.Client().SMembers(rdb.Context(), "room:"+roomID+":participants").Result()
+func GetParticipants(roomID string) ([]*Participant, error) {
+	luaScript := `
+		local roomID = ARGV[1]
+		local participantIDs = redis.call('SMEMBERS', 'room:' .. roomID .. ':participants')
+		local result = {}
+		
+		for i = 1, #participantIDs do
+			local participantData = redis.call('HMGET', 
+				'room:' .. roomID .. ':participant:' .. participantIDs[i],
+				'id', 'username', 'isHost', 'avatar_src', 'session_id'
+			)
+			
+			-- Only include participants with username
+			if participantData[2] and participantData[2] ~= '' then
+				table.insert(result, {
+					participantData[1], -- id
+					participantData[2], -- username  
+					participantData[3], -- isHost
+					participantData[4], -- avatar_src
+					participantData[5]  -- session_id
+				})
+			end
+		end
+		
+		return result
+	`
+
+	result, err := rdb.Client().Eval(rdb.Context(), luaScript, []string{}, roomID).Result()
 	if err != nil {
 		return nil, err
 	}
 
-	participants := make([]*Participant, 0, len(participantsID))
-	for _, participantID := range participantsID {
-		participantData, err := rdb.Client().HGetAll(rdb.Context(), "room:"+roomID+":participant:"+participantID).Result()
-		if err != nil {
-			return nil, err
-		}
+	participantList, ok := result.([]any)
+	if !ok {
+		return []*Participant{}, nil
+	}
 
-		// skip any participant with no session id
-		if len(participantData["session_id"]) == 0 {
+	participants := make([]*Participant, 0, len(participantList))
+	for _, item := range participantList {
+		data, ok := item.([]any)
+		if !ok || len(data) != 5 {
 			continue
 		}
 
-		isHost, err := strconv.ParseBool(participantData["isHost"])
+		isHost, err := strconv.ParseBool(data[2].(string))
 		if err != nil {
-			return nil, err
+			continue
 		}
 
 		participant := &Participant{
-			ID:        participantData["id"],
-			Username:  participantData["username"],
+			ID:        data[0].(string),
+			Username:  data[1].(string),
 			IsHost:    isHost,
-			AvatarSrc: participantData["avatar_src"],
-			SessionID: participantData["session_id"],
+			AvatarSrc: data[3].(string),
+			SessionID: data[4].(string),
 		}
 
 		participants = append(participants, participant)
 	}
 
-	return participants, err
+	return participants, nil
 }

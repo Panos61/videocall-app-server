@@ -13,26 +13,20 @@ import (
 func GetMeHandler(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("room_id")
 	if roomID == "" {
-		utils.JSONResponse(w, map[string]interface{}{
-			"error": "room not found",
-		}, http.StatusNotFound)
+		http.Error(w, "room not found", http.StatusNotFound)
 		return
 	}
 
 	token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
 	claims, err := utils.ValidateToken(token)
 	if err != nil {
-		utils.JSONResponse(w, map[string]interface{}{
-			"error": err.Error(),
-		}, http.StatusUnauthorized)
+		http.Error(w, "invalid token", http.StatusUnauthorized)
 		return
 	}
 
 	me, err := participant.GetMe(roomID, claims.ParticipantID)
 	if err != nil {
-		utils.JSONResponse(w, map[string]interface{}{
-			"error": err.Error(),
-		}, http.StatusNotFound)
+		http.Error(w, "participant not found", http.StatusNotFound)
 		return
 	}
 
@@ -42,9 +36,7 @@ func GetMeHandler(w http.ResponseWriter, r *http.Request) {
 func SetSessionHandler(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("room_id")
 	if roomID == "" {
-		utils.JSONResponse(w, map[string]interface{}{
-			"error": "room not found",
-		}, http.StatusNotFound)
+		http.Error(w, "room not found", http.StatusNotFound)
 		return
 	}
 
@@ -131,7 +123,7 @@ func SetParticipantCallDataHandler(w http.ResponseWriter, r *http.Request) {
 
 	participant, err := participant.SetParticipantCallData(roomID, claims.ParticipantID, payload.Username, payload.AvatarSrc)
 	if err != nil {
-		utils.JSONResponse(w, map[string]string{"error": "failed to start call"}, http.StatusBadRequest)
+		http.Error(w, "failed to set participant call data", http.StatusBadRequest)
 		return
 	}
 
