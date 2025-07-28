@@ -59,12 +59,11 @@ func JoinRoom(roomID string) (*participant.Participant, error) {
 
 	p.Token = token
 
-	// Broadcast participants-in-lobby update (only ID and IsHost, as username might not be set yet in lobby)
+	// Broadcast participants-in-lobby update (only ID, as username might not be set yet in lobby)
 	if p.SessionID == "" {
-		participant.BroadcastGuestsUpdate(roomID, []participant.Guest{
+		participant.BroadcastParticipantsUpdate(roomID, []participant.Guest{
 			{
-				ID:     p.ID,
-				IsHost: p.IsHost,
+				ID: p.ID,
 			},
 		})
 	}
