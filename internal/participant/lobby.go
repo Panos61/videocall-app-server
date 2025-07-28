@@ -8,14 +8,13 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Broadcast participant's id and isHost, as username might not be set yet in lobby
+// Broadcast participant's id, as username might not be set yet in lobby
 type Guest struct {
-	ID     string `json:"id"`
-	IsHost bool   `json:"is_host"`
+	ID string `json:"id"`
 }
 
 // Subscribes to the participants-in-lobby broadcast channel
-func GuestsSubscription(roomID string, conn *websocket.Conn) {
+func ParticipantsSubscription(roomID string, conn *websocket.Conn) {
 	done := make(chan struct{})
 
 	// Start a goroutine to read from the websocket
@@ -74,7 +73,7 @@ func GuestsSubscription(roomID string, conn *websocket.Conn) {
 }
 
 // Broadcasts the  participants-in-lobby update to all connected clients in the room
-func BroadcastGuestsUpdate(roomID string, participants []Guest) (bool, error) {
+func BroadcastParticipantsUpdate(roomID string, participants []Guest) (bool, error) {
 	payloadJSON, err := json.Marshal(participants)
 	if err != nil {
 		return false, err

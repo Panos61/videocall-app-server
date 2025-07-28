@@ -63,7 +63,7 @@ func SetSessionHandler(w http.ResponseWriter, r *http.Request) {
 	utils.JSONResponse(w, sessionID, http.StatusOK)
 }
 
-func GuestsHandler(w http.ResponseWriter, r *http.Request) {
+func ParticipantsHandler(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("room_id")
 
 	conn, err := upgrader.Upgrade(w, r, nil)
@@ -73,7 +73,7 @@ func GuestsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	participant.GuestsSubscription(roomID, conn)
+	participant.ParticipantsSubscription(roomID, conn)
 }
 
 type ParticipantCallData struct {
