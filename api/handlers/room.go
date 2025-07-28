@@ -136,11 +136,14 @@ func GetParticipantsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	participantData, err := participant.GetParticipants(roomID)
+	allParticipants, participantsInCall, err := participant.GetParticipants(roomID)
 	if err != nil {
 		http.Error(w, "failed to get participants", http.StatusBadRequest)
 		return
 	}
 
-	utils.JSONResponse(w, map[string]any{"participants": participantData}, http.StatusOK)
+	utils.JSONResponse(w, map[string]any{
+		"participants":       allParticipants,
+		"participantsInCall": participantsInCall,
+	}, http.StatusOK)
 }

@@ -62,7 +62,7 @@ func GetParticipant(roomID, participantID string) (*Participant, error) {
 	return participant, nil
 }
 
-func GetParticipants(roomID string) ([]*Participant, error) {
+func GetParticipants(roomID string) ([]*Participant, []*Participant, error) {
 	luaScript := `
 		local roomID = ARGV[1]
 		local participantIDs = redis.call('SMEMBERS', 'room:' .. roomID .. ':participants')
@@ -91,36 +91,58 @@ func GetParticipants(roomID string) ([]*Participant, error) {
 
 	result, err := rdb.Client().Eval(rdb.Context(), luaScript, []string{}, roomID).Result()
 	if err != nil {
-		return nil, err
+		return []*Participant{}, []*Participant{}, err
 	}
 
 	participantList, ok := result.([]any)
 	if !ok {
-		return []*Participant{}, nil
+		return []*Participant{}, []*Participant{}, nil
 	}
 
-	participants := make([]*Participant, 0, len(participantList))
+	allParticipants := make([]*Participant, 0, len(participantList))
 	for _, item := range participantList {
 		data, ok := item.([]any)
 		if !ok || len(data) != 5 {
 			continue
 		}
 
-		isHost, err := strconv.ParseBool(data[2].(string))
+		id, _ := data[0].(string)
+		username, _ := data[1].(string)
+		isHostStr, _ := data[2].(string)
+		avatarSrc, _ := data[3].(string)
+		sessionID := ""
+		if data[4] != nil {
+			sessionID, _ = data[4].(string)
+		}
+
+		isHost, err := strconv.ParseBool(isHostStr)
 		if err != nil {
 			continue
 		}
 
 		participant := &Participant{
-			ID:        data[0].(string),
-			Username:  data[1].(string),
+			ID:        id,
+			Username:  username,
 			IsHost:    isHost,
-			AvatarSrc: data[3].(string),
-			SessionID: data[4].(string),
+			AvatarSrc: avatarSrc,
+			SessionID: sessionID,
 		}
 
-		participants = append(participants, participant)
+		allParticipants = append(allParticipants, participant)
 	}
 
-	return participants, nil
+	// participants = ALL participants in room (with username)
+	participants := make([]*Participant, 0, len(allParticipants))
+	// participantsInCall = ONLY participants actively in call (with session_id)
+	participantsInCall := make([]*Participant, 0, len(allParticipants))
+
+	for _, participant := range allParticipants {
+		participants = append(participants, participant)
+
+		if participant.SessionID != "" {
+			participantsInCall = append(participantsInCall, participant)
+		}
+	}
+
+	return participants, participantsInCall, nil
 }
