@@ -8,11 +8,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-// Broadcast participant's id, as username might not be set yet in lobby
-type Guest struct {
-	ID string `json:"id"`
-}
-
 // Subscribes to the participants-in-lobby broadcast channel
 func ParticipantsSubscription(roomID string, conn *websocket.Conn) {
 	done := make(chan struct{})
@@ -32,7 +27,7 @@ func ParticipantsSubscription(roomID string, conn *websocket.Conn) {
 	}()
 
 	go func() {
-		subscriber := rdb.Client().Subscribe(rdb.Context(), "room:"+roomID+":participants_lobby")
+		subscriber := rdb.Client().Subscribe(rdb.Context(), "room:"+roomID+":participants")
 		defer subscriber.Close()
 
 		for {
@@ -48,7 +43,7 @@ func ParticipantsSubscription(roomID string, conn *websocket.Conn) {
 					return
 				}
 
-				var participantsData []Guest
+				var participantsData []*Participant
 				err = json.Unmarshal([]byte(msg.Payload), &participantsData)
 				if err != nil {
 					fmt.Println("error unmarshalling message", err)
@@ -72,14 +67,14 @@ func ParticipantsSubscription(roomID string, conn *websocket.Conn) {
 	<-done
 }
 
-// Broadcasts the  participants-in-lobby update to all connected clients in the room
-func BroadcastParticipantsUpdate(roomID string, participants []Guest) (bool, error) {
+// Broadcasts the participants-in-lobby update to all connected clients in the room
+func BroadcastParticipantsUpdate(roomID string, participants []*Participant) (bool, error) {
 	payloadJSON, err := json.Marshal(participants)
 	if err != nil {
 		return false, err
 	}
 
-	if err := rdb.Client().Publish(rdb.Context(), "room:"+roomID+":participants_lobby", payloadJSON).Err(); err != nil {
+	if err := rdb.Client().Publish(rdb.Context(), "room:"+roomID+":participants", payloadJSON).Err(); err != nil {
 		return false, err
 	}
 

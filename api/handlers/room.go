@@ -128,22 +128,3 @@ func GetRoomInfoHandler(w http.ResponseWriter, r *http.Request) {
 
 	utils.JSONResponse(w, roomInfo.CreatedAt, http.StatusOK)
 }
-
-func GetParticipantsHandler(w http.ResponseWriter, r *http.Request) {
-	roomID := r.PathValue("room_id")
-	if roomID == "" {
-		http.Error(w, "room id not found", http.StatusBadRequest)
-		return
-	}
-
-	allParticipants, participantsInCall, err := participant.GetParticipants(roomID)
-	if err != nil {
-		http.Error(w, "failed to get participants", http.StatusBadRequest)
-		return
-	}
-
-	utils.JSONResponse(w, map[string]any{
-		"participants":       allParticipants,
-		"participantsInCall": participantsInCall,
-	}, http.StatusOK)
-}
