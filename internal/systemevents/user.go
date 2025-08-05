@@ -1,4 +1,4 @@
-package room
+package systemevents
 
 import (
 	"encoding/json"
