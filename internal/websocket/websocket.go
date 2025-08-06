@@ -68,19 +68,12 @@ func (c *WSConnectionPool) Broadcast(roomID, senderID string, message any) {
 		}
 	}
 	c.mu.RUnlock()
-
 	for connID, conn := range connections {
-		if connID != senderID {
-			if err := conn.Send(message); err != nil {
-				c.RemoveConnection(roomID, connID)
-				conn.Socket.Close()
-			}
+		if err := conn.Send(message); err != nil {
+			c.RemoveConnection(roomID, connID)
+			conn.Socket.Close()
 		}
 	}
-}
-
-func (c *WSConnectionPool) BroadcastToAll(roomID string, message any) {
-	c.Broadcast(roomID, "", message)
 }
 
 func (c *WSConnectionPool) GetConnection(roomID, connectionID string) (*WSConnection, bool) {

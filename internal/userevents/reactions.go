@@ -2,13 +2,14 @@ package userevents
 
 import (
 	"encoding/json"
-	"log"
 	"server/internal/events"
+	"server/internal/participant"
 	"server/internal/websocket"
 )
 
 type ReactionEvent struct {
 	ReactionType string `json:"reaction_type"`
+	Username     string `json:"username"`
 }
 
 type ReactionHandler struct {
@@ -21,9 +22,22 @@ func NewReactionHandler(connPool *websocket.WSConnectionPool) *ReactionHandler {
 	}
 }
 
-func (h *ReactionHandler) Handler(roomID, senderID string, data json.RawMessage) error {
+func (h *ReactionHandler) Handler(roomID, senderID string, payload json.RawMessage) error {
 	var reactionData ReactionEvent
-	if err := json.Unmarshal(data, &reactionData); err != nil {
+	if err := json.Unmarshal(payload, &reactionData); err != nil {
+		return err
+	}
+
+	participantData, err := participant.GetParticipant(roomID, senderID)
+	if err != nil {
+		return err
+	}
+
+	payload, err = json.Marshal(ReactionEvent{
+		ReactionType: reactionData.ReactionType,
+		Username:     participantData.Username,
+	})
+	if err != nil {
 		return err
 	}
 
@@ -31,18 +45,13 @@ func (h *ReactionHandler) Handler(roomID, senderID string, data json.RawMessage)
 		RoomID:   roomID,
 		SenderID: senderID,
 		Type:     events.ReactionSent,
-		Data:     data,
+		Payload:  payload,
 	}
 
-	if err := json.Unmarshal(data, &event); err != nil {
-		return err
-	}
-
-	log.Printf("#### broadcasting to all: Type=%s, Data=%s", event.Type, string(event.Data))
-	h.connPool.BroadcastToAll(roomID, event)
+	h.connPool.Broadcast(roomID, senderID, event)
 	return nil
 }
 
 func (h *ReactionHandler) GetEventType() string {
-	return "reaction"
+	return "reaction.sent"
 }

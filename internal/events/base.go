@@ -3,14 +3,13 @@ package events
 import (
 	"encoding/json"
 	"errors"
-	"server/internal/utils"
 )
 
 type BaseEvent struct {
 	RoomID   string          `json:"room_id"`
 	SenderID string          `json:"sender_id"`
 	Type     string          `json:"type"`
-	Data     json.RawMessage `json:"data"`
+	Payload  json.RawMessage `json:"payload"`
 }
 
 type EventHandler interface {
@@ -32,24 +31,11 @@ func (r *EventRegistry) RegisterHandler(handler EventHandler) {
 	r.handlers[handler.GetEventType()] = handler
 }
 
-func (r *EventRegistry) AuthenticateEvent(event BaseEvent, token string) (bool, error) {
-	claims, err := utils.ValidateToken(token)
-	if err != nil {
-		return false, err
-	}
-
-	if claims.ParticipantID != event.SenderID {
-		return false, errors.New("unauthorized")
-	}
-
-	return true, nil
-}
-
 func (r *EventRegistry) HandleEvent(event BaseEvent) error {
 	handler, exists := r.handlers[event.Type]
 	if !exists {
 		return errors.New("event handler not found")
 	}
 
-	return handler.Handler(event.RoomID, event.SenderID, event.Data)
+	return handler.Handler(event.RoomID, event.SenderID, event.Payload)
 }

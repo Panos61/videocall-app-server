@@ -2,6 +2,6 @@ package events
 
 const (
 	UserLeft     = "user.left"
-	ReactionSent = "reaction"
-	RaisedHand   = "raised_hand"
+	ReactionSent = "reaction.sent"
+	RaisedHand   = "raised_hand.sent"
 )
