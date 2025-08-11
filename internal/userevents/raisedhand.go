@@ -48,7 +48,7 @@ func (h *RaisedHandHandler) Handler(roomID, senderID string, payload json.RawMes
 		Payload:  payload,
 	}
 
-	h.connPool.Broadcast(roomID, senderID, event)
+	h.connPool.BroadcastToAll(roomID, event)
 	return nil
 }
 

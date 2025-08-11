@@ -48,7 +48,7 @@ func (h *ReactionHandler) Handler(roomID, senderID string, payload json.RawMessa
 		Payload:  payload,
 	}
 
-	h.connPool.Broadcast(roomID, senderID, event)
+	h.connPool.BroadcastToAll(roomID, event)
 	return nil
 }
 

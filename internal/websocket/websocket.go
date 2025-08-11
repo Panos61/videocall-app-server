@@ -76,6 +76,10 @@ func (c *WSConnectionPool) Broadcast(roomID, senderID string, message any) {
 	}
 }
 
+func (c *WSConnectionPool) BroadcastToAll(roomID string, message any) {
+	c.Broadcast(roomID, "", message)
+}
+
 func (c *WSConnectionPool) GetConnection(roomID, connectionID string) (*WSConnection, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
