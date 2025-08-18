@@ -2,7 +2,6 @@ package userevents
 
 import (
 	"encoding/json"
-	"fmt"
 	"server/internal/events"
 	"server/internal/participant"
 	"server/internal/websocket"
@@ -43,9 +42,6 @@ func (h *ShareScreenHandler) Handler(roomID, senderID string, payload json.RawMe
 	if err != nil {
 		return err
 	}
-
-	fmt.Println("shareScreenData --->>", string(payload))
-	fmt.Println("shareScreenData.Active --->>", shareScreenData.Active)
 
 	if shareScreenData.Active {
 		event := events.BaseEvent{

@@ -15,7 +15,23 @@ func (c *WSConnection) Send(message any) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
+	if c.Socket == nil {
+		return websocket.ErrCloseSent
+	}
+
 	return c.Socket.WriteJSON(message)
+}
+
+func (c *WSConnection) Close() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.Socket != nil {
+		err := c.Socket.Close()
+		c.Socket = nil
+		return err
+	}
+	return nil
 }
 
 type WSConnectionPool struct {
@@ -71,7 +87,7 @@ func (c *WSConnectionPool) Broadcast(roomID, senderID string, message any) {
 	for connID, conn := range connections {
 		if err := conn.Send(message); err != nil {
 			c.RemoveConnection(roomID, connID)
-			conn.Socket.Close()
+			conn.Close()
 		}
 	}
 }
