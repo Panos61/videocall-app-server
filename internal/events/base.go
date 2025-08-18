@@ -31,6 +31,10 @@ func (r *EventRegistry) RegisterHandler(handler EventHandler) {
 	r.handlers[handler.GetEventType()] = handler
 }
 
+func (r *EventRegistry) RegisterHandlerForType(eventType string, handler EventHandler) {
+	r.handlers[eventType] = handler
+}
+
 func (r *EventRegistry) HandleEvent(event BaseEvent) error {
 	handler, exists := r.handlers[event.Type]
 	if !exists {

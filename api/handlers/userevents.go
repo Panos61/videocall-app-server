@@ -22,6 +22,12 @@ func init() {
 
 	raisedHandHandler := userevents.NewRaisedHandHandler(userEventConnPool)
 	eventRegistry.RegisterHandler(raisedHandHandler)
+
+	shareScreenHandler := userevents.NewShareScreenHandler(userEventConnPool)
+	// Register the same handler for both share screen started and ended events
+	eventRegistry.RegisterHandler(shareScreenHandler)
+	// Manual registration for the ended event since GetEventType() can only return one type
+	eventRegistry.RegisterHandlerForType("share_screen.ended", shareScreenHandler)
 }
 
 func UserEventHandler(w http.ResponseWriter, r *http.Request) {
