@@ -28,3 +28,9 @@ func GenerateSessionID() (string, error) {
 
 	return base64.URLEncoding.EncodeToString(b), nil
 }
+
+// ValidateUUID checks if a string is a valid UUID v4
+func ValidateUUID(uuidStr string) bool {
+	_, err := uuid.Parse(uuidStr)
+	return err == nil
+}
