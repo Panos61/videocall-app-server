@@ -1,7 +1,9 @@
 package events
 
 const (
-	UserLeft           = "user.left"
+	//  system events
+	UserLeft = "user.left"
+	// user events
 	ReactionSent       = "reaction.sent"
 	RaisedHand         = "raised_hand.sent"
 	ShareScreenStarted = "share_screen.started"
