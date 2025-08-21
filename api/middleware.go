@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"server/internal/room"
 	"server/internal/utils"
 )
 
@@ -33,6 +34,12 @@ func ValidateRoomIDMiddleware(next http.Handler) http.HandlerFunc {
 		// Only validate if room_id is present in the path
 		if roomID != "" && !utils.ValidateUUID(roomID) {
 			http.Error(w, "invalid room ID format", http.StatusBadRequest)
+			return
+		}
+
+		roomExists, _ := room.GetRoom(roomID)
+		if roomExists == "" {
+			http.Error(w, "room not found", http.StatusNotFound)
 			return
 		}
 
