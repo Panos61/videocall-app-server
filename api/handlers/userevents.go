@@ -22,6 +22,11 @@ func init() {
 
 	raisedHandHandler := userevents.NewRaisedHandHandler(userEventConnPool)
 	eventRegistry.RegisterHandler(raisedHandHandler)
+
+	shareScreenHandler := userevents.NewShareScreenHandler(userEventConnPool)
+	eventRegistry.RegisterHandler(shareScreenHandler)
+	// Manual registration for the ended event since GetEventType() can only return one type
+	eventRegistry.RegisterHandlerForType("share_screen.ended", shareScreenHandler)
 }
 
 func UserEventHandler(w http.ResponseWriter, r *http.Request) {
@@ -55,17 +60,34 @@ func UserEventHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer func() {
 		userEventConnPool.RemoveConnection(roomID, claims.ParticipantID)
+		connection.Close()
 	}()
 
 	for {
 		var baseEvent events.BaseEvent
 		if err := conn.ReadJSON(&baseEvent); err != nil {
-			if gorilla_websocket.IsCloseError(err, gorilla_websocket.CloseGoingAway, gorilla_websocket.CloseAbnormalClosure) {
+			// Handle various websocket close/error conditions
+			if gorilla_websocket.IsCloseError(err,
+				gorilla_websocket.CloseGoingAway,
+				gorilla_websocket.CloseAbnormalClosure,
+				gorilla_websocket.CloseNormalClosure,
+				gorilla_websocket.CloseNoStatusReceived) {
 				log.Printf("connection closed by client: %v", err)
 				return
 			}
-			log.Printf("error reading event: %v", err)
-			continue
+
+			// For unexpected websocket errors, also return to avoid panic
+			if gorilla_websocket.IsUnexpectedCloseError(err,
+				gorilla_websocket.CloseGoingAway,
+				gorilla_websocket.CloseAbnormalClosure,
+				gorilla_websocket.CloseNormalClosure) {
+				log.Printf("unexpected websocket close: %v", err)
+				return
+			}
+
+			// Any other error (like "repeated read on failed websocket connection") should also terminate
+			log.Printf("websocket read error, closing connection: %v", err)
+			return
 		}
 
 		baseEvent.RoomID = roomID
