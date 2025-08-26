@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"server/internal/events"
-	"server/internal/participant"
 	"server/internal/rdb"
 
 	"github.com/gorilla/websocket"
@@ -79,69 +77,6 @@ func SystemEventsSubscription(roomID string, participantID string, conn *websock
 	<-done
 }
 
-func UserJoinedEvent(roomID string, p *participant.Participant) (bool, error) {
-	payload := SystemEvent{
-		Type: events.UserJoined,
-		Payload: map[string]any{
-			"participant_id":   p.ID,
-			"participant_name": p.Username,
-		},
-	}
-
-	payloadJSON, err := json.Marshal(payload)
-	if err != nil {
-		return false, err
-	}
-
-	if err := rdb.Client().Publish(rdb.Context(), "room:"+roomID+":system_events", payloadJSON).Err(); err != nil {
-		return false, err
-	}
-
-	return true, nil
-}
-
 func shouldSkipNotification(event SystemEvent, participantID string) bool {
 	return event.Payload["participant_id"] == participantID
 }
-
-// func notifyUserLeft(roomID string, p *participant.Participant) (bool, error) {
-// 	payload := SystemEvent{
-// 		Type: UserLeft,
-// 		Payload: map[string]any{
-// 			"participant_id":   p.ID,
-// 			"participant_name": p.Username,
-// 		},
-// 	}
-
-// 	payloadJSON, err := json.Marshal(payload)
-// 	if err != nil {
-// 		return false, err
-// 	}
-
-// 	if err := rdb.Client().Publish(rdb.Context(), "room:"+roomID+":user_events", payloadJSON).Err(); err != nil {
-// 		return false, err
-// 	}
-
-// 	return true, nil
-// }
-
-// func notifyHostLeft(roomID string, p *participant.Participant) (bool, error) {
-// 	payload := UserEvent{
-// 		Type: HostLeft,
-// 		Payload: map[string]any{
-// 			"participant_id":   p.ID,
-// 			"participant_name": p.Username,
-// 		},
-// 	}
-
-// 	payloadJSON, err := json.Marshal(payload)
-// 	if err != nil {
-// 		return false, err
-// 	}
-
-// 	if err := rdb.Client().Publish(rdb.Context(), "room:"+roomID+":user_events", payloadJSON).Err(); err != nil {
-// 		return false, err
-// 	}
-
-// 	return true, nil
-// }
