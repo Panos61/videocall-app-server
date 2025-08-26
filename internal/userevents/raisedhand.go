@@ -22,7 +22,7 @@ func NewRaisedHandHandler(connPool *websocket.WSConnectionPool) *RaisedHandHandl
 	}
 }
 
-func (h *RaisedHandHandler) Handler(roomID, senderID string, payload json.RawMessage) error {
+func (h *RaisedHandHandler) Handler(roomID, senderID, sessionID string, payload json.RawMessage) error {
 	var raisedHandEvent RaisedHandEvent
 	if err := json.Unmarshal(payload, &raisedHandEvent); err != nil {
 		return err

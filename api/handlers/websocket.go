@@ -25,11 +25,6 @@ type AuthMessage struct {
 	SessionID string `json:"sessionID"`
 }
 
-type MediaState struct {
-	Audio bool `json:"audio"`
-	Video bool `json:"video"`
-}
-
 type SettingsMessage struct {
 	Settings settings.Settings `json:"settings"`
 }
@@ -41,7 +36,6 @@ type Message struct {
 	Token       string            `json:"token"`
 	Description string            `json:"description"`
 	To          string            `json:"to"`
-	Media       MediaState        `json:"media"`
 	Settings    settings.Settings `json:"settings"`
 }
 

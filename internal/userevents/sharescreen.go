@@ -23,7 +23,7 @@ func NewShareScreenHandler(connPool *websocket.WSConnectionPool) *ShareScreenHan
 	}
 }
 
-func (h *ShareScreenHandler) Handler(roomID, senderID string, payload json.RawMessage) error {
+func (h *ShareScreenHandler) Handler(roomID, senderID, sessionID string, payload json.RawMessage) error {
 	var shareScreenData ShareScreenEvent
 	if err := json.Unmarshal(payload, &shareScreenData); err != nil {
 		return err

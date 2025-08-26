@@ -17,6 +17,9 @@ var (
 )
 
 func init() {
+	mediaControlHandler := userevents.NewMediaControlHandler(userEventConnPool)
+	eventRegistry.RegisterHandler(mediaControlHandler)
+
 	reactionHandler := userevents.NewReactionHandler(userEventConnPool)
 	eventRegistry.RegisterHandler(reactionHandler)
 
@@ -26,6 +29,7 @@ func init() {
 	shareScreenHandler := userevents.NewShareScreenHandler(userEventConnPool)
 	eventRegistry.RegisterHandler(shareScreenHandler)
 	// Manual registration for the ended event since GetEventType() can only return one type
+	// todo: refactor this
 	eventRegistry.RegisterHandlerForType("share_screen.ended", shareScreenHandler)
 }
 
