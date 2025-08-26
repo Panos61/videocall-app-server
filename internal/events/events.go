@@ -2,7 +2,8 @@ package events
 
 const (
 	//  system events
-	UserLeft = "user.left"
+	UserJoined = "user.joined"
+	UserLeft   = "user.left"
 	// user events
 	MediaControlUpdated = "media.control.updated"
 	ReactionSent        = "reaction.sent"

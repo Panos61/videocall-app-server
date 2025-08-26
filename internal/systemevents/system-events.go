@@ -4,23 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"server/internal/events"
 	"server/internal/participant"
 	"server/internal/rdb"
 
 	"github.com/gorilla/websocket"
 )
 
-const (
-	UserLeft = "user_left"
-	HostLeft = "host_left"
-)
-
-type UserEvent struct {
+type SystemEvent struct {
 	Type    string         `json:"type"`
 	Payload map[string]any `json:"payload"`
 }
 
-func UserEventSubscription(roomID string, participantID string, conn *websocket.Conn) {
+func SystemEventsSubscription(roomID string, participantID string, conn *websocket.Conn) {
 	done := make(chan struct{})
 
 	// Start a goroutine to read from the websocket
@@ -38,7 +34,7 @@ func UserEventSubscription(roomID string, participantID string, conn *websocket.
 	}()
 
 	go func() {
-		subscriber := rdb.Client().Subscribe(rdb.Context(), "room:"+roomID+":user_events")
+		subscriber := rdb.Client().Subscribe(rdb.Context(), "room:"+roomID+":system_events")
 		defer subscriber.Close()
 
 		for {
@@ -54,7 +50,7 @@ func UserEventSubscription(roomID string, participantID string, conn *websocket.
 					return
 				}
 
-				var eventData UserEvent
+				var eventData SystemEvent
 				err = json.Unmarshal([]byte(msg.Payload), &eventData)
 				if err != nil {
 					fmt.Println("error unmarshalling message", err)
@@ -83,9 +79,9 @@ func UserEventSubscription(roomID string, participantID string, conn *websocket.
 	<-done
 }
 
-func notifyHostLeft(roomID string, p *participant.Participant) (bool, error) {
-	payload := UserEvent{
-		Type: HostLeft,
+func UserJoinedEvent(roomID string, p *participant.Participant) (bool, error) {
+	payload := SystemEvent{
+		Type: events.UserJoined,
 		Payload: map[string]any{
 			"participant_id":   p.ID,
 			"participant_name": p.Username,
@@ -97,34 +93,55 @@ func notifyHostLeft(roomID string, p *participant.Participant) (bool, error) {
 		return false, err
 	}
 
-	if err := rdb.Client().Publish(rdb.Context(), "room:"+roomID+":user_events", payloadJSON).Err(); err != nil {
+	if err := rdb.Client().Publish(rdb.Context(), "room:"+roomID+":system_events", payloadJSON).Err(); err != nil {
 		return false, err
 	}
 
 	return true, nil
 }
 
-func notifyUserLeft(roomID string, p *participant.Participant) (bool, error) {
-	payload := UserEvent{
-		Type: UserLeft,
-		Payload: map[string]any{
-			"participant_id":   p.ID,
-			"participant_name": p.Username,
-		},
-	}
-
-	payloadJSON, err := json.Marshal(payload)
-	if err != nil {
-		return false, err
-	}
-
-	if err := rdb.Client().Publish(rdb.Context(), "room:"+roomID+":user_events", payloadJSON).Err(); err != nil {
-		return false, err
-	}
-
-	return true, nil
-}
-
-func shouldSkipNotification(event UserEvent, participantID string) bool {
+func shouldSkipNotification(event SystemEvent, participantID string) bool {
 	return event.Payload["participant_id"] == participantID
 }
+
+// func notifyUserLeft(roomID string, p *participant.Participant) (bool, error) {
+// 	payload := SystemEvent{
+// 		Type: UserLeft,
+// 		Payload: map[string]any{
+// 			"participant_id":   p.ID,
+// 			"participant_name": p.Username,
+// 		},
+// 	}
+
+// 	payloadJSON, err := json.Marshal(payload)
+// 	if err != nil {
+// 		return false, err
+// 	}
+
+// 	if err := rdb.Client().Publish(rdb.Context(), "room:"+roomID+":user_events", payloadJSON).Err(); err != nil {
+// 		return false, err
+// 	}
+
+// 	return true, nil
+// }
+
+// func notifyHostLeft(roomID string, p *participant.Participant) (bool, error) {
+// 	payload := UserEvent{
+// 		Type: HostLeft,
+// 		Payload: map[string]any{
+// 			"participant_id":   p.ID,
+// 			"participant_name": p.Username,
+// 		},
+// 	}
+
+// 	payloadJSON, err := json.Marshal(payload)
+// 	if err != nil {
+// 		return false, err
+// 	}
+
+// 	if err := rdb.Client().Publish(rdb.Context(), "room:"+roomID+":user_events", payloadJSON).Err(); err != nil {
+// 		return false, err
+// 	}
+
+// 	return true, nil
+// }
