@@ -22,7 +22,7 @@ func NewReactionHandler(connPool *websocket.WSConnectionPool) *ReactionHandler {
 	}
 }
 
-func (h *ReactionHandler) Handler(roomID, senderID string, payload json.RawMessage) error {
+func (h *ReactionHandler) Handler(roomID, senderID, sessionID string, payload json.RawMessage) error {
 	var reactionData ReactionEvent
 	if err := json.Unmarshal(payload, &reactionData); err != nil {
 		return err

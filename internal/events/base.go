@@ -6,14 +6,15 @@ import (
 )
 
 type BaseEvent struct {
-	RoomID   string          `json:"room_id"`
-	SenderID string          `json:"sender_id"`
-	Type     string          `json:"type"`
-	Payload  json.RawMessage `json:"payload"`
+	RoomID    string          `json:"room_id"`
+	SenderID  string          `json:"sender_id"`
+	SessionID string          `json:"session_id"`
+	Type      string          `json:"type"`
+	Payload   json.RawMessage `json:"payload"`
 }
 
 type EventHandler interface {
-	Handler(roomID, senderID string, data json.RawMessage) error
+	Handler(roomID, senderID, sessionID string, data json.RawMessage) error
 	GetEventType() string
 }
 
@@ -41,5 +42,5 @@ func (r *EventRegistry) HandleEvent(event BaseEvent) error {
 		return errors.New("event handler not found")
 	}
 
-	return handler.Handler(event.RoomID, event.SenderID, event.Payload)
+	return handler.Handler(event.RoomID, event.SenderID, event.SessionID, event.Payload)
 }

@@ -33,7 +33,6 @@ func InitializeRoutes() *http.ServeMux {
 
 	mux.HandleFunc("/ws/signalling/{room_id}", WithRoomValidation(api.SessionHandler))
 	mux.HandleFunc("/ws/call/{room_id}", WithRoomValidation(api.CallBroadcastHandler))
-	mux.HandleFunc("/ws/media/{room_id}", WithRoomValidation(api.MediaHandler))
 	mux.HandleFunc("/ws/settings-broadcast/{room_id}", WithRoomValidation(api.SettingsBroadcastHandler))
 	mux.HandleFunc("/ws/participants/{room_id}", WithRoomValidation(api.ParticipantsHandler))
 	mux.HandleFunc("/ws/user-events/{room_id}", WithRoomValidation(api.UserEventHandler))
