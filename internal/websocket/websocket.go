@@ -35,13 +35,15 @@ func (c *WSConnection) Close() error {
 }
 
 type WSConnectionPool struct {
-	rooms map[string]map[string]*WSConnection
-	mu    sync.RWMutex
+	rooms       map[string]map[string]*WSConnection
+	roomLeaders map[string]string
+	mu          sync.RWMutex
 }
 
 func NewWSConnectionPool() *WSConnectionPool {
 	return &WSConnectionPool{
-		rooms: make(map[string]map[string]*WSConnection),
+		rooms:       make(map[string]map[string]*WSConnection),
+		roomLeaders: make(map[string]string),
 	}
 }
 
@@ -54,6 +56,10 @@ func (c *WSConnectionPool) AddConnection(roomID, connectionID string, conn *WSCo
 	}
 
 	c.rooms[roomID][connectionID] = conn
+
+	if _, hasLeader := c.roomLeaders[roomID]; !hasLeader {
+		c.roomLeaders[roomID] = connectionID
+	}
 }
 
 func (c *WSConnectionPool) RemoveConnection(roomID, connectionID string) {
@@ -63,8 +69,20 @@ func (c *WSConnectionPool) RemoveConnection(roomID, connectionID string) {
 	if room, exists := c.rooms[roomID]; exists {
 		delete(room, connectionID)
 
+		// If the leader left, assign new leader
+		if c.roomLeaders[roomID] == connectionID {
+			delete(c.roomLeaders, roomID)
+
+			// Pick first remaining connection as new leader
+			for newLeaderID := range room {
+				c.roomLeaders[roomID] = newLeaderID
+				break
+			}
+		}
+
 		if len(room) == 0 {
 			delete(c.rooms, roomID)
+			delete(c.roomLeaders, roomID)
 		}
 	}
 }
@@ -115,4 +133,12 @@ func (c *WSConnectionPool) SendToConnection(roomID, connectionID string, message
 	}
 
 	return nil
+}
+
+func (c *WSConnectionPool) IsRoomLeader(roomID, connectionID string) bool {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	leader, exists := c.roomLeaders[roomID]
+	return exists && leader == connectionID
 }
