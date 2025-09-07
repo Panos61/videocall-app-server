@@ -20,6 +20,9 @@ func init() {
 	mediaControlHandler := userevents.NewMediaControlHandler(userEventConnPool)
 	eventRegistry.RegisterHandler(mediaControlHandler)
 
+	syncMediaHandler := userevents.NewSyncMediaHandler(userEventConnPool)
+	eventRegistry.RegisterHandler(syncMediaHandler)
+
 	reactionHandler := userevents.NewReactionHandler(userEventConnPool)
 	eventRegistry.RegisterHandler(reactionHandler)
 
