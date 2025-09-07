@@ -4,14 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"server/internal/events"
 	"server/internal/rdb"
 
 	"github.com/gorilla/websocket"
 )
 
 type SystemEvent struct {
-	Type    string         `json:"type"`
-	Payload map[string]any `json:"payload"`
+	Type      string         `json:"type"`
+	SessionID string         `json:"session_id"`
+	Payload   map[string]any `json:"payload"`
 }
 
 func SystemEventsSubscription(roomID string, participantID string, conn *websocket.Conn) {
@@ -23,11 +25,13 @@ func SystemEventsSubscription(roomID string, participantID string, conn *websock
 		defer close(done)
 		for {
 			// ReadMessage blocks until a message is received or an error occurs
-			_, _, err := conn.ReadMessage()
+			var clientEvent SystemEvent
+			err := conn.ReadJSON(&clientEvent)
 			if err != nil {
-				// Connection was closed or there was an error
 				return
 			}
+
+			handleClientEvent(roomID, clientEvent)
 		}
 	}()
 
@@ -77,6 +81,29 @@ func SystemEventsSubscription(roomID string, participantID string, conn *websock
 	<-done
 }
 
+func handleClientEvent(roomID string, event SystemEvent) {
+	switch event.Type {
+	case events.UserJoined:
+		publishSystemEvent(roomID, event)
+	}
+}
+
+func publishSystemEvent(roomID string, event SystemEvent) {
+	payloadJSON, err := json.Marshal(event)
+	if err != nil {
+		return
+	}
+
+	if err := rdb.Client().Publish(rdb.Context(), "room:"+roomID+":system_events", payloadJSON).Err(); err != nil {
+		return
+	}
+}
+
 func shouldSkipNotification(event SystemEvent, participantID string) bool {
-	return event.Payload["participant_id"] == participantID
+	storedParticipantID, err := rdb.Client().Get(rdb.Context(), "session:"+event.SessionID).Result()
+	if err != nil {
+		return true
+	}
+
+	return participantID == storedParticipantID
 }
