@@ -14,6 +14,8 @@ func InitializeRoutes() *http.ServeMux {
 	mux.HandleFunc("/start-call/{room_id}", WithRoomValidation(api.StartCallHandler))
 	mux.HandleFunc("/leave-call/{room_id}", WithRoomValidation(api.LeaveCallHandler))
 
+	mux.HandleFunc("/lvk-token/{room_id}", WithRoomValidation(api.LivekitTokenHandler))
+
 	mux.HandleFunc("/call/{room_id}", WithRoomValidation(api.GetCallStateHandler))
 	mux.HandleFunc("/set-participant-call-data/{room_id}", WithRoomValidation(api.SetParticipantCallDataHandler))
 	mux.HandleFunc("/set-session/{room_id}", WithRoomValidation(api.SetSessionHandler))
@@ -31,7 +33,6 @@ func InitializeRoutes() *http.ServeMux {
 	mux.HandleFunc("/authorization", CorsMiddleware(http.HandlerFunc(api.AuthorizationHandler)))
 	mux.HandleFunc("/refresh-token", CorsMiddleware(http.HandlerFunc(api.RefreshTokenHandler)))
 
-	mux.HandleFunc("/ws/signalling/{room_id}", WithRoomValidation(api.SessionHandler))
 	mux.HandleFunc("/ws/call/{room_id}", WithRoomValidation(api.CallBroadcastHandler))
 	mux.HandleFunc("/ws/settings-broadcast/{room_id}", WithRoomValidation(api.SettingsBroadcastHandler))
 	mux.HandleFunc("/ws/participants/{room_id}", WithRoomValidation(api.ParticipantsHandler))
