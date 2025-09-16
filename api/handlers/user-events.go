@@ -16,6 +16,7 @@ var (
 	eventRegistry     = events.NewEventRegistry()
 )
 
+// todo: use pub/sub in the future
 func init() {
 	mediaControlHandler := userevents.NewMediaControlHandler(userEventConnPool)
 	eventRegistry.RegisterHandler(mediaControlHandler)

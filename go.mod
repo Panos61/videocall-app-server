@@ -10,7 +10,6 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	github.com/joho/godotenv v1.5.1
 	github.com/livekit/protocol v1.37.0
-	github.com/pion/turn/v4 v4.0.0
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/redis/go-redis/v9 v9.7.3
 )
@@ -54,6 +53,7 @@ require (
 	github.com/pion/srtp/v3 v3.0.4 // indirect
 	github.com/pion/stun/v3 v3.0.0 // indirect
 	github.com/pion/transport/v3 v3.0.7 // indirect
+	github.com/pion/turn/v4 v4.0.0 // indirect
 	github.com/pion/webrtc/v4 v4.0.8 // indirect
 	github.com/puzpuzpuz/xsync/v3 v3.5.0 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
