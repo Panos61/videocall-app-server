@@ -20,5 +20,4 @@ func Run() {
 	if err := http.ListenAndServe(":8080", router); err != nil {
 		log.Printf("Failed to start server: %s\n", err)
 	}
-
 }
