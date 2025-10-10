@@ -33,6 +33,7 @@ func InitializeRoutes() *http.ServeMux {
 	mux.HandleFunc("/authorization", CorsMiddleware(http.HandlerFunc(api.AuthorizationHandler)))
 	mux.HandleFunc("/refresh-token", CorsMiddleware(http.HandlerFunc(api.RefreshTokenHandler)))
 
+	mux.HandleFunc("/ws/chat/{room_id}", WithRoomValidation(http.HandlerFunc(api.MessageExchange)))
 	mux.HandleFunc("/ws/call/{room_id}", WithRoomValidation(api.CallBroadcastHandler))
 	mux.HandleFunc("/ws/settings-broadcast/{room_id}", WithRoomValidation(api.SettingsBroadcastHandler))
 	mux.HandleFunc("/ws/participants/{room_id}", WithRoomValidation(api.ParticipantsHandler))
