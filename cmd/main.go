@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"server/internal"
-	"server/internal/chat"
 	"server/internal/rdb"
 	"server/internal/rmq"
 )
@@ -19,8 +18,5 @@ func main() {
 	}
 	defer rmqClient.Close()
 
-	broker := chat.NewRMQBroker(rmqClient)
-	chat.InitGlobalService(broker)
-
-	internal.Run()
+	internal.Run(rmqClient)
 }
