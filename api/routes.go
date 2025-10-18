@@ -3,9 +3,14 @@ package api
 import (
 	"net/http"
 	api "server/api/handlers"
+	"server/internal/chat"
 )
 
-func InitializeRoutes() *http.ServeMux {
+type API struct {
+	Chat *chat.Service
+}
+
+func (a *API) InitializeRoutes() *http.ServeMux {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /create-room", CorsMiddleware(http.HandlerFunc(api.CreateRoomHandler)))
@@ -32,6 +37,10 @@ func InitializeRoutes() *http.ServeMux {
 
 	mux.HandleFunc("/authorization", CorsMiddleware(http.HandlerFunc(api.AuthorizationHandler)))
 	mux.HandleFunc("/refresh-token", CorsMiddleware(http.HandlerFunc(api.RefreshTokenHandler)))
+
+	mux.HandleFunc("/ws/chat/{room_id}", WithRoomValidation(func(w http.ResponseWriter, r *http.Request) {
+		api.MessageExchange(w, r, a.Chat)
+	}))
 
 	mux.HandleFunc("/ws/call/{room_id}", WithRoomValidation(api.CallBroadcastHandler))
 	mux.HandleFunc("/ws/settings-broadcast/{room_id}", WithRoomValidation(api.SettingsBroadcastHandler))
