@@ -18,6 +18,7 @@ func (a *API) InitializeRoutes() *http.ServeMux {
 	mux.HandleFunc("/exit-room/{room_id}", WithRoomValidation(api.ExitRoomHandler))
 	mux.HandleFunc("/start-call/{room_id}", WithRoomValidation(api.StartCallHandler))
 	mux.HandleFunc("/leave-call/{room_id}", WithRoomValidation(api.LeaveCallHandler))
+	mux.HandleFunc("/kill-call/{room_id}", WithRoomValidation(api.KillCallHandler))
 
 	mux.HandleFunc("/lvk-token/{room_id}", WithRoomValidation(api.LivekitTokenHandler))
 

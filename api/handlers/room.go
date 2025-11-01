@@ -112,6 +112,31 @@ func ExitRoomHandler(w http.ResponseWriter, r *http.Request) {
 	}, http.StatusOK)
 }
 
+func KillCallHandler(w http.ResponseWriter, r *http.Request) {
+	roomID := r.PathValue("room_id")
+	if roomID == "" {
+		http.Error(w, "room ID is required", http.StatusBadRequest)
+		return
+	}
+
+	token := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	claims, err := utils.ValidateToken(token)
+	if err != nil {
+		http.Error(w, "invalid token", http.StatusUnauthorized)
+		return
+	}
+
+	err = room.KillCall(roomID, claims.ParticipantID)
+	if err != nil {
+		http.Error(w, "failed to kill call", http.StatusInternalServerError)
+		return
+	}
+
+	utils.JSONResponse(w, map[string]bool{
+		"killedCall": true,
+	}, http.StatusOK)
+}
+
 // for now it's just the room created_at timestamp
 func GetRoomInfoHandler(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("room_id")

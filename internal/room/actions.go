@@ -145,6 +145,23 @@ func ExitRoom(roomID, participantID string, isHost bool) (bool, error) {
 	return true, nil
 }
 
+func KillCall(roomID, participantID string) error {
+	pipe := rdb.Client().TxPipeline()
+	pipe.Del(rdb.Context(), "room:"+roomID)
+	pipe.Del(rdb.Context(), "room:"+roomID+":settings")
+	pipe.Del(rdb.Context(), "room:"+roomID+":invitation")
+	pipe.Del(rdb.Context(), "room:"+roomID+":participant:"+participantID)
+	pipe.Del(rdb.Context(), "room:"+roomID+":participants")
+	pipe.Del(rdb.Context(), "call:"+roomID)
+
+	_, err := pipe.Exec(rdb.Context())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func UpdateHost(roomID, previousHostID string, participantIDs []string) (bool, error) {
 	var nonHostParticipants []string
 
@@ -163,8 +180,8 @@ func UpdateHost(roomID, previousHostID string, participantIDs []string) (bool, e
 	newHostID := nonHostParticipants[randomIndex]
 
 	pipe := rdb.Client().Pipeline()
-	pipe.HSet(rdb.Context(), "room:"+roomID, map[string]any{"host_id": newHostID})
-	pipe.HSet(rdb.Context(), "room:"+roomID+":participant:"+newHostID, map[string]any{"isHost": true})
+	pipe.HSet(rdb.Context(), "room:"+roomID, map[string]string{"host_id": newHostID})
+	pipe.HSet(rdb.Context(), "room:"+roomID+":participant:"+newHostID, map[string]bool{"isHost": true})
 
 	_, err := pipe.Exec(rdb.Context())
 	if err != nil {
