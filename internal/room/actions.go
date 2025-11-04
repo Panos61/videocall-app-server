@@ -2,7 +2,6 @@ package room
 
 import (
 	"fmt"
-	"math/rand"
 	"server/internal/participant"
 	"server/internal/rdb"
 	"server/internal/utils"
@@ -13,12 +12,11 @@ import (
 
 func CreateRoom() (string, error) {
 	roomID := uuid.New().String()
-
-	code := GenerateCode()
+	invitationCode := GenerateCode()
 
 	pipe := rdb.Client().TxPipeline()
 	pipe.HSet(rdb.Context(), "room:"+roomID, map[string]any{"id": roomID, "created_at": time.Now().Unix()})
-	pipe.Set(rdb.Context(), "room:"+roomID+":invitation", code, 30*time.Minute)
+	pipe.Set(rdb.Context(), "room:"+roomID+":invitation", invitationCode, 30*time.Minute)
 	pipe.HSet(rdb.Context(), "room:"+roomID+":settings", map[string]any{
 		"invitation_expiry": "30",
 		"invite_permission": false,
@@ -71,35 +69,6 @@ func JoinRoom(roomID string) (*participant.Participant, error) {
 	return p, nil
 }
 
-func SetHostParticipant(roomID string) (*participant.Participant, error) {
-	participant := &participant.Participant{
-		ID:     utils.GenerateParticipantID(),
-		IsHost: true,
-	}
-
-	pipe := rdb.Client().TxPipeline()
-	pipe.SAdd(rdb.Context(), "room:"+roomID+":participants", participant.ID)
-	pipe.HMSet(rdb.Context(), "room:"+roomID+":participant:"+participant.ID, map[string]any{
-		"id":     participant.ID,
-		"isHost": participant.IsHost,
-	})
-	pipe.HSet(rdb.Context(), "room:"+roomID, "host_id", participant.ID)
-
-	_, err := pipe.Exec(rdb.Context())
-	if err != nil {
-		return nil, fmt.Errorf("error setting host participant: %w", err)
-	}
-
-	jwtToken, err := utils.GenerateJWT(participant.ID, true)
-	if err != nil {
-		return nil, err
-	}
-
-	participant.Token = jwtToken
-
-	return participant, nil
-}
-
 func ExitRoom(roomID, participantID string, isHost bool) (bool, error) {
 	participantIDs, err := rdb.Client().SMembers(rdb.Context(), "room:"+roomID+":participants").Result()
 	if err != nil {
@@ -124,7 +93,8 @@ func ExitRoom(roomID, participantID string, isHost bool) (bool, error) {
 	}
 
 	if isHost {
-		hostUpdated, err := UpdateHost(roomID, participantID, participantIDs)
+		hostUpdated, err := AssignRandomHost(roomID, participantID, participantIDs)
+		fmt.Println("hostUpdated", hostUpdated)
 		if err != nil {
 			return false, err
 		}
@@ -145,7 +115,7 @@ func ExitRoom(roomID, participantID string, isHost bool) (bool, error) {
 	return true, nil
 }
 
-func KillCall(roomID, participantID string) error {
+func KillRoom(roomID, participantID string) error {
 	pipe := rdb.Client().TxPipeline()
 	pipe.Del(rdb.Context(), "room:"+roomID)
 	pipe.Del(rdb.Context(), "room:"+roomID+":settings")
@@ -160,33 +130,4 @@ func KillCall(roomID, participantID string) error {
 	}
 
 	return nil
-}
-
-func UpdateHost(roomID, previousHostID string, participantIDs []string) (bool, error) {
-	var nonHostParticipants []string
-
-	for _, id := range participantIDs {
-		if id != previousHostID {
-			nonHostParticipants = append(nonHostParticipants, id)
-		}
-	}
-
-	if len(nonHostParticipants) == 0 {
-		return false, nil
-	}
-
-	rand.New(rand.NewSource(time.Now().UnixNano()))
-	randomIndex := rand.Intn(len(nonHostParticipants))
-	newHostID := nonHostParticipants[randomIndex]
-
-	pipe := rdb.Client().Pipeline()
-	pipe.HSet(rdb.Context(), "room:"+roomID, map[string]string{"host_id": newHostID})
-	pipe.HSet(rdb.Context(), "room:"+roomID+":participant:"+newHostID, map[string]bool{"isHost": true})
-
-	_, err := pipe.Exec(rdb.Context())
-	if err != nil {
-		return false, err
-	}
-
-	return true, nil
 }
