@@ -2,8 +2,10 @@ package room
 
 import (
 	"fmt"
+	"server/internal/events"
 	"server/internal/participant"
 	"server/internal/rdb"
+	"server/internal/systemevents"
 	"server/internal/utils"
 	"time"
 
@@ -69,6 +71,8 @@ func JoinRoom(roomID string) (*participant.Participant, error) {
 	return p, nil
 }
 
+// just exits the room and deletes participant's data
+// deletes the room and relevant data if there's only one participant
 func ExitRoom(roomID, participantID string, isHost bool) (bool, error) {
 	participantIDs, err := rdb.Client().SMembers(rdb.Context(), "room:"+roomID+":participants").Result()
 	if err != nil {
@@ -93,11 +97,19 @@ func ExitRoom(roomID, participantID string, isHost bool) (bool, error) {
 	}
 
 	if isHost {
-		hostUpdated, err := AssignRandomHost(roomID, participantID, participantIDs)
-		fmt.Println("hostUpdated", hostUpdated)
+		hostUpdated, newHostID, err := AssignRandomHost(roomID, participantID, participantIDs)
 		if err != nil {
 			return false, err
 		}
+
+		systemevents.PublishSystemEvent(roomID, systemevents.SystemEvent{
+			Type:      events.HostUpdated,
+			SessionID: "",
+			Payload: map[string]any{
+				"new_host_id": newHostID,
+				"timestamp":   time.Now().Unix(),
+			},
+		})
 
 		if !hostUpdated {
 			return false, nil
@@ -115,6 +127,7 @@ func ExitRoom(roomID, participantID string, isHost bool) (bool, error) {
 	return true, nil
 }
 
+// kills/deletes the room and relevant data as host chose to
 func KillRoom(roomID, participantID string) error {
 	pipe := rdb.Client().TxPipeline()
 	pipe.Del(rdb.Context(), "room:"+roomID)

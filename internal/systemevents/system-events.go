@@ -12,7 +12,7 @@ import (
 
 type SystemEvent struct {
 	Type      string         `json:"type"`
-	SessionID string         `json:"session_id"`
+	SessionID string         `json:"session_id,omitempty"`
 	Payload   map[string]any `json:"payload"`
 }
 
@@ -31,7 +31,16 @@ func SystemEventsSubscription(roomID string, participantID string, conn *websock
 				return
 			}
 
-			handleClientEvent(roomID, clientEvent)
+			switch clientEvent.Type {
+			case events.HostLeft:
+				handleTypedEvent(roomID, clientEvent.Payload, handleHostLeft)
+			case events.HostHandover:
+				handleTypedEvent(roomID, clientEvent.Payload, handleHostHandover)
+			case events.HostUpdated:
+				handleTypedEvent(roomID, clientEvent.Payload, handleHostUpdate)
+			default:
+				fmt.Println("clientEvent.Type", clientEvent.Type)
+			}
 		}
 	}()
 
@@ -48,14 +57,12 @@ func SystemEventsSubscription(roomID string, participantID string, conn *websock
 			default:
 				msg, err := subscriber.ReceiveMessage(rdb.Context())
 				if err != nil {
-					fmt.Println("error receiving message", err)
 					return
 				}
 
 				var eventData SystemEvent
 				err = json.Unmarshal([]byte(msg.Payload), &eventData)
 				if err != nil {
-					fmt.Println("error unmarshalling message", err)
 					continue
 				}
 
@@ -69,7 +76,6 @@ func SystemEventsSubscription(roomID string, participantID string, conn *websock
 					}
 
 					if err := conn.WriteJSON(eventData); err != nil {
-						fmt.Println("error writing message", err)
 						return
 					}
 				}
@@ -81,18 +87,12 @@ func SystemEventsSubscription(roomID string, participantID string, conn *websock
 	<-done
 }
 
-func handleClientEvent(roomID string, event SystemEvent) {
-	switch event.Type {
-	case events.UserJoined:
-		publishSystemEvent(roomID, event)
-	}
-}
-
-func publishSystemEvent(roomID string, event SystemEvent) {
+func PublishSystemEvent(roomID string, event SystemEvent) {
 	payloadJSON, err := json.Marshal(event)
 	if err != nil {
 		return
 	}
+	fmt.Printf("Publishing system_event: %s\n", string(payloadJSON))
 
 	if err := rdb.Client().Publish(rdb.Context(), "room:"+roomID+":system_events", payloadJSON).Err(); err != nil {
 		return
@@ -100,6 +100,10 @@ func publishSystemEvent(roomID string, event SystemEvent) {
 }
 
 func shouldSkipNotification(event SystemEvent, participantID string) bool {
+	if event.SessionID == "" {
+		return false
+	}
+
 	storedParticipantID, err := rdb.Client().Get(rdb.Context(), "session:"+event.SessionID).Result()
 	if err != nil {
 		return true

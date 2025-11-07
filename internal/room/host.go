@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// sets as host the creator of the room
 func SetHostParticipant(roomID string) (*participant.Participant, error) {
 	participantID := utils.GenerateParticipantID()
 
@@ -37,7 +38,8 @@ func SetHostParticipant(roomID string) (*participant.Participant, error) {
 	}, nil
 }
 
-func AssignRandomHost(roomID, previousHostID string, participantIDs []string) (bool, error) {
+// assigns a random host from the non-host participants after the previous host leaves the room
+func AssignRandomHost(roomID, previousHostID string, participantIDs []string) (bool, string, error) {
 	var nonHostParticipants []string
 
 	for _, id := range participantIDs {
@@ -47,14 +49,12 @@ func AssignRandomHost(roomID, previousHostID string, participantIDs []string) (b
 	}
 
 	if len(nonHostParticipants) == 0 {
-		fmt.Println("no non-host participants")
-		return false, nil
+		return false, "", nil
 	}
 
 	rand.New(rand.NewSource(time.Now().UnixNano()))
 	randomIndex := rand.Intn(len(nonHostParticipants))
 	newHostID := nonHostParticipants[randomIndex]
-	fmt.Println("newHostID", newHostID)
 
 	pipe := rdb.Client().Pipeline()
 	pipe.HSet(rdb.Context(), "room:"+roomID, map[string]string{"host_id": newHostID})
@@ -62,10 +62,8 @@ func AssignRandomHost(roomID, previousHostID string, participantIDs []string) (b
 
 	_, err := pipe.Exec(rdb.Context())
 	if err != nil {
-		fmt.Println("error updating host", err)
-		return false, err
+		return false, "", err
 	}
 
-	fmt.Println("host updated")
-	return true, nil
+	return true, newHostID, nil
 }

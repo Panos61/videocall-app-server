@@ -112,7 +112,7 @@ func ExitRoomHandler(w http.ResponseWriter, r *http.Request) {
 	}, http.StatusOK)
 }
 
-func KillCallHandler(w http.ResponseWriter, r *http.Request) {
+func KillRoomHandler(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("room_id")
 	if roomID == "" {
 		http.Error(w, "room ID is required", http.StatusBadRequest)
@@ -126,7 +126,7 @@ func KillCallHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = room.KillCall(roomID, claims.ParticipantID)
+	err = room.KillRoom(roomID, claims.ParticipantID)
 	if err != nil {
 		http.Error(w, "failed to kill call", http.StatusInternalServerError)
 		return
