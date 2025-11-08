@@ -15,7 +15,7 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hostParticipant, err := room.SetHostParticipant(newRoom)
+	hostParticipant, err := room.SetCreatorAsHost(newRoom)
 	if err != nil {
 		http.Error(w, "failed to set host participant", http.StatusInternalServerError)
 		return

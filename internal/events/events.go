@@ -2,12 +2,10 @@ package events
 
 const (
 	//  system events
-	UserJoined = "user.joined"
-	UserLeft   = "user.left"
-
-	HostLeft     = "host.left"     // when initial host leaves the room
-	HostHandover = "host.handover" // when the randomly selected candidate rejects the host promotion, the event is triggered again excluding the rejected candidate
-	HostUpdated  = "host.updated"  // when the new host finally accepts the host promotion
+	UserJoined  = "user.joined"  // not used
+	UserLeft    = "user.left"    // not used
+	HostLeft    = "host.left"    // when initial host leaves the room
+	HostUpdated = "host.updated" // when the new host finally accepts the host promotion
 
 	// user events
 	MediaControlUpdated = "media.control.updated"

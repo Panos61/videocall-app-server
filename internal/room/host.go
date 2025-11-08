@@ -3,14 +3,16 @@ package room
 import (
 	"fmt"
 	"math/rand"
+	"server/internal/events"
 	"server/internal/participant"
 	"server/internal/rdb"
+	"server/internal/systemevents"
 	"server/internal/utils"
 	"time"
 )
 
 // sets as host the creator of the room
-func SetHostParticipant(roomID string) (*participant.Participant, error) {
+func SetCreatorAsHost(roomID string) (*participant.Participant, error) {
 	participantID := utils.GenerateParticipantID()
 
 	pipe := rdb.Client().TxPipeline()
@@ -66,4 +68,44 @@ func AssignRandomHost(roomID, previousHostID string, participantIDs []string) (b
 	}
 
 	return true, newHostID, nil
+}
+
+// manually sets the selected participant as the new host
+func SetHost(roomID, participantID string) error {
+	participant, err := participant.GetParticipant(roomID, participantID)
+	if err != nil {
+		return fmt.Errorf("selected participant does not exist: %v", err)
+	}
+
+	if participant.IsHost {
+		return fmt.Errorf("selected participant is already host")
+	}
+
+	pipe := rdb.Client().TxPipeline()
+	pipe.HSet(rdb.Context(), "room:"+roomID, "host_id", participantID)
+	pipe.HSet(rdb.Context(), "room:"+roomID+":participant:"+participantID, map[string]any{"isHost": true})
+
+	_, err = pipe.Exec(rdb.Context())
+	if err != nil {
+		return err
+	}
+
+	systemevents.PublishSystemEvent(roomID, systemevents.SystemEvent{
+		Type: events.HostUpdated,
+		Payload: map[string]any{
+			"new_host_id": participantID,
+			"timestamp":   time.Now().Unix(),
+		},
+	})
+
+	return nil
+}
+
+func GetHost(roomID string) (string, error) {
+	hostID, err := rdb.Client().HGet(rdb.Context(), "room:"+roomID, "host_id").Result()
+	if err != nil {
+		return "", err
+	}
+
+	return hostID, err
 }

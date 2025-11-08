@@ -34,10 +34,8 @@ func SystemEventsSubscription(roomID string, participantID string, conn *websock
 			switch clientEvent.Type {
 			case events.HostLeft:
 				handleTypedEvent(roomID, clientEvent.Payload, handleHostLeft)
-			case events.HostHandover:
-				handleTypedEvent(roomID, clientEvent.Payload, handleHostHandover)
 			case events.HostUpdated:
-				handleTypedEvent(roomID, clientEvent.Payload, handleHostUpdate)
+				handleTypedEvent(roomID, clientEvent.Payload, handleHostUpdated)
 			default:
 				fmt.Println("clientEvent.Type", clientEvent.Type)
 			}
