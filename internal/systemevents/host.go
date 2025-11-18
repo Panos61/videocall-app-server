@@ -30,8 +30,9 @@ func handleHostUpdated(roomID string, payload HostUpdatedPayload) {
 	PublishSystemEvent(roomID, SystemEvent{
 		Type: events.HostUpdated,
 		Payload: map[string]any{
-			"new_host_id": payload.NewHostID,
-			"timestamp":   payload.Timestamp,
+			"current_host_id": payload.CurrentHostID,
+			"new_host_id":     payload.NewHostID,
+			"timestamp":       payload.Timestamp,
 		},
 	})
 }

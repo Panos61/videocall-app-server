@@ -95,8 +95,9 @@ func SetHost(roomID, currentHostID, selectedParticipantID string) error {
 	systemevents.PublishSystemEvent(roomID, systemevents.SystemEvent{
 		Type: events.HostUpdated,
 		Payload: map[string]any{
-			"new_host_id": selectedParticipantID,
-			"timestamp":   time.Now().Unix(),
+			"current_host_id": currentHostID,
+			"new_host_id":     selectedParticipantID,
+			"timestamp":       time.Now().Unix(),
 		},
 	})
 
