@@ -101,7 +101,13 @@ func ExitRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hasExited, err := room.ExitRoom(roomID, claims.ParticipantID, claims.IsHost)
+	participant, err := participant.GetParticipant(roomID, claims.ParticipantID)
+	if err != nil {
+		http.Error(w, "failed to get participant", http.StatusInternalServerError)
+		return
+	}
+
+	hasExited, err := room.ExitRoom(roomID, participant.ID, participant.IsHost)
 	if err != nil {
 		http.Error(w, "failed to exit room", http.StatusInternalServerError)
 		return

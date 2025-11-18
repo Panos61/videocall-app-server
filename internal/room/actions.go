@@ -52,7 +52,7 @@ func JoinRoom(roomID string) (*participant.Participant, error) {
 		return nil, fmt.Errorf("error setting host participant: %w", err)
 	}
 
-	token, err := utils.GenerateJWT(p.ID, false)
+	token, err := utils.GenerateJWT(p.ID)
 	if err != nil {
 		return nil, fmt.Errorf("error generating token for guest: %w", err)
 	}

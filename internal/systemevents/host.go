@@ -11,8 +11,9 @@ type HostLeftPayload struct {
 }
 
 type HostUpdatedPayload struct {
-	NewHostID string    `json:"new_host_id"`
-	Timestamp time.Time `json:"timestamp"`
+	CurrentHostID string    `json:"current_host_id"`
+	NewHostID     string    `json:"new_host_id"`
+	Timestamp     time.Time `json:"timestamp"`
 }
 
 func handleHostLeft(roomID string, payload HostLeftPayload) {

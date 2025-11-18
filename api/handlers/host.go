@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"server/internal/participant"
 	"server/internal/room"
 	"server/internal/utils"
-	"strings"
 )
 
 func AssignHostHandler(w http.ResponseWriter, r *http.Request) {
@@ -16,20 +16,9 @@ func AssignHostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenStr := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
-	claims, err := utils.ValidateToken(tokenStr)
-	if err != nil {
-		http.Error(w, "invalid token", http.StatusUnauthorized)
-		return
-	}
-
-	if !claims.IsHost {
-		http.Error(w, "only host can assign new host", http.StatusForbidden)
-		return
-	}
-
 	var requestBody struct {
-		NewHostID string `json:"new_host_id"`
+		CurrentHostID string `json:"current_host_id"`
+		NewHostID     string `json:"new_host_id"`
 	}
 
 	body, err := io.ReadAll(r.Body)
@@ -44,7 +33,18 @@ func AssignHostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = room.SetHost(roomID, requestBody.NewHostID)
+	currentHost, err := participant.GetParticipant(roomID, requestBody.CurrentHostID)
+	if err != nil {
+		http.Error(w, "failed to get current host", http.StatusInternalServerError)
+		return
+	}
+
+	if !currentHost.IsHost {
+		http.Error(w, "only host can assign new host", http.StatusForbidden)
+		return
+	}
+
+	err = room.SetHost(roomID, requestBody.CurrentHostID, requestBody.NewHostID)
 	if err != nil {
 		http.Error(w, "failed to set new host", http.StatusInternalServerError)
 		return

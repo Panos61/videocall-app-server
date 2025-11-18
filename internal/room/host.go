@@ -28,7 +28,7 @@ func SetCreatorAsHost(roomID string) (*participant.Participant, error) {
 		return nil, fmt.Errorf("error setting host participant: %w", err)
 	}
 
-	jwtToken, err := utils.GenerateJWT(participantID, true)
+	jwtToken, err := utils.GenerateJWT(participantID)
 	if err != nil {
 		return nil, err
 	}
@@ -71,8 +71,9 @@ func AssignRandomHost(roomID, previousHostID string, participantIDs []string) (b
 }
 
 // manually sets the selected participant as the new host
-func SetHost(roomID, participantID string) error {
-	participant, err := participant.GetParticipant(roomID, participantID)
+// the previous host is unassigned from host
+func SetHost(roomID, currentHostID, selectedParticipantID string) error {
+	participant, err := participant.GetParticipant(roomID, selectedParticipantID)
 	if err != nil {
 		return fmt.Errorf("selected participant does not exist: %v", err)
 	}
@@ -82,8 +83,9 @@ func SetHost(roomID, participantID string) error {
 	}
 
 	pipe := rdb.Client().TxPipeline()
-	pipe.HSet(rdb.Context(), "room:"+roomID, "host_id", participantID)
-	pipe.HSet(rdb.Context(), "room:"+roomID+":participant:"+participantID, map[string]any{"isHost": true})
+	pipe.HSet(rdb.Context(), "room:"+roomID, "host_id", selectedParticipantID)
+	pipe.HSet(rdb.Context(), "room:"+roomID+":participant:"+selectedParticipantID, map[string]any{"isHost": true})
+	pipe.HSet(rdb.Context(), "room:"+roomID+":participant:"+currentHostID, map[string]any{"isHost": false})
 
 	_, err = pipe.Exec(rdb.Context())
 	if err != nil {
@@ -93,7 +95,7 @@ func SetHost(roomID, participantID string) error {
 	systemevents.PublishSystemEvent(roomID, systemevents.SystemEvent{
 		Type: events.HostUpdated,
 		Payload: map[string]any{
-			"new_host_id": participantID,
+			"new_host_id": selectedParticipantID,
 			"timestamp":   time.Now().Unix(),
 		},
 	})
