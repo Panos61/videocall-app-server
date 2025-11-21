@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"server/internal/call"
+	"server/internal/participant"
 	"server/internal/utils"
 	"strings"
 )
@@ -26,12 +27,18 @@ func StartCallHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !claims.IsHost {
+	participant, err := participant.GetParticipant(roomID, claims.ParticipantID)
+	if err != nil {
+		http.Error(w, "failed to get participant", http.StatusInternalServerError)
+		return
+	}
+
+	if !participant.IsHost {
 		http.Error(w, "only host can start call", http.StatusForbidden)
 		return
 	}
 
-	callState, err := call.StartCall(roomID, claims.ParticipantID)
+	callState, err := call.StartCall(roomID, participant.ID)
 	if err != nil {
 		http.Error(w, "failed to start call", http.StatusInternalServerError)
 		return

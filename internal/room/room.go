@@ -22,15 +22,6 @@ func GetInfo(roomID string) (RoomInfo, error) {
 	return RoomInfo{CreatedAt: createdAt}, nil
 }
 
-func GetHost(roomID string) (string, error) {
-	hostID, err := rdb.Client().HGet(rdb.Context(), "room:"+roomID, "host_id").Result()
-	if err != nil {
-		return "", err
-	}
-
-	return hostID, err
-}
-
 func GetRoom(id string) (string, error) {
 	roomData, err := rdb.Client().HGetAll(rdb.Context(), "room:"+id).Result()
 	if err != nil || len(roomData) == 0 {

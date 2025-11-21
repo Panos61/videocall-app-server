@@ -9,18 +9,16 @@ import (
 
 type Claims struct {
 	ParticipantID string `json:"participant_id"`
-	IsHost        bool   `json:"is_host"`
 	jwt.RegisteredClaims
 }
 
 var secretKey = []byte("secret_key")
 
-func GenerateJWT(participantID string, isHost bool) (string, error) {
+func GenerateJWT(participantID string) (string, error) {
 	expirationTime := time.Now().Add(30 * time.Minute)
 
 	claims := &Claims{
 		ParticipantID: participantID,
-		IsHost:        isHost,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
 		},
@@ -39,7 +37,7 @@ func GenerateJWT(participantID string, isHost bool) (string, error) {
 func ValidateToken(tokenStr string) (*Claims, error) {
 	claims := &Claims{}
 
-	token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (any, error) {
 		return secretKey, nil
 	})
 

@@ -18,14 +18,16 @@ func (a *API) InitializeRoutes() *http.ServeMux {
 	mux.HandleFunc("/exit-room/{room_id}", WithRoomValidation(api.ExitRoomHandler))
 	mux.HandleFunc("/start-call/{room_id}", WithRoomValidation(api.StartCallHandler))
 	mux.HandleFunc("/leave-call/{room_id}", WithRoomValidation(api.LeaveCallHandler))
+	mux.HandleFunc("/kill-room/{room_id}", WithRoomValidation(api.KillRoomHandler))
+	mux.HandleFunc("/assign-host/{room_id}", WithRoomValidation(api.AssignHostHandler))
 
 	mux.HandleFunc("/lvk-token/{room_id}", WithRoomValidation(api.LivekitTokenHandler))
 
-	mux.HandleFunc("/call/{room_id}", WithRoomValidation(api.GetCallStateHandler))
 	mux.HandleFunc("/set-participant-call-data/{room_id}", WithRoomValidation(api.SetParticipantCallDataHandler))
 	mux.HandleFunc("/set-session/{room_id}", WithRoomValidation(api.SetSessionHandler))
 
 	mux.HandleFunc("/room-info/{room_id}", WithRoomValidation(api.GetRoomInfoHandler))
+	mux.HandleFunc("/call/{room_id}", WithRoomValidation(api.GetCallStateHandler))
 	mux.HandleFunc("/get-me/{room_id}", WithRoomValidation(api.GetMeHandler))
 	mux.HandleFunc("/participants/{room_id}", WithRoomValidation(api.GetParticipantsHandler))
 

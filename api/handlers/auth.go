@@ -19,7 +19,7 @@ func RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 	claims, err := utils.ValidateToken(token)
 	if err != nil {
 		if err.Error() == "token is expired" {
-			newToken, err := utils.GenerateJWT(claims.ParticipantID, claims.IsHost)
+			newToken, err := utils.GenerateJWT(claims.ParticipantID)
 			if err != nil {
 				http.Error(w, "failed to generate token", http.StatusInternalServerError)
 				return
