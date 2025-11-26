@@ -3,6 +3,8 @@ package config
 import (
 	"fmt"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -20,6 +22,10 @@ type RMQ struct {
 }
 
 func LoadConfig() (*Config, error) {
+	if err := godotenv.Load(); err != nil {
+		return nil, fmt.Errorf("error loading .env file: %w", err)
+	}
+
 	rmqURL := os.Getenv("RMQ_URL")
 	livekitURL := os.Getenv("LIVEKIT_URL")
 	livekitApiKey := os.Getenv("LIVEKIT_API_KEY")
