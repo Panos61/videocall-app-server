@@ -26,7 +26,7 @@ func getSecretKey() []byte {
 		if key == "" {
 			log.Fatal("JWT_SECRET is not set")
 		}
-		fmt.Println(key)
+
 		secretKey = []byte(key)
 	})
 
