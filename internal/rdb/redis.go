@@ -15,13 +15,13 @@ var (
 )
 
 // Initialize the Redis client
-func InitRedisClient() {
+func InitRedisClient(url, password string, db int) {
 	once.Do(func() {
 		ctx = context.Background()
 		rdb = redis.NewClient(&redis.Options{
-			Addr:     "localhost:6379",
+			Addr:     url,
 			Password: "",
-			DB:       0,
+			DB:       db,
 		})
 
 		if err := rdb.Ping(ctx).Err(); err != nil {

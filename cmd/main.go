@@ -15,7 +15,7 @@ func main() {
 	}
 
 	// init redis
-	rdb.InitRedisClient()
+	rdb.InitRedisClient(config.Redis.URL, config.Redis.Password, config.Redis.DB)
 
 	// init rabbitMQ
 	rmqClient, err := rmq.InitRabbitMQ(config.RMQ.URL)
