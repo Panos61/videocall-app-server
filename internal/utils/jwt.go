@@ -2,6 +2,9 @@ package utils
 
 import (
 	"fmt"
+	"log"
+	"os"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -12,9 +15,26 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-var secretKey = []byte("secret_key")
+var (
+	secretKey []byte
+	once      sync.Once
+)
+
+func getSecretKey() []byte {
+	once.Do(func() {
+		key := os.Getenv("JWT_SECRET")
+		if key == "" {
+			log.Fatal("JWT_SECRET is not set")
+		}
+
+		secretKey = []byte(key)
+	})
+
+	return secretKey
+}
 
 func GenerateJWT(participantID string) (string, error) {
+	secretKey := getSecretKey()
 	expirationTime := time.Now().Add(30 * time.Minute)
 
 	claims := &Claims{
