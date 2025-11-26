@@ -20,21 +20,20 @@ type RMQ struct {
 }
 
 func LoadConfig() (*Config, error) {
-	url := os.Getenv("LIVEKIT_URL")
-	apiKey := os.Getenv("LIVEKIT_API_KEY")
-	apiSecret := os.Getenv("LIVEKIT_API_SECRET")
-
 	rmqURL := os.Getenv("RMQ_URL")
+	livekitURL := os.Getenv("LIVEKIT_URL")
+	livekitApiKey := os.Getenv("LIVEKIT_API_KEY")
+	livekitApiSecret := os.Getenv("LIVEKIT_API_SECRET")
 
-	if url == "" || apiKey == "" || apiSecret == "" || rmqURL == "" {
+	if livekitURL == "" || livekitApiKey == "" || livekitApiSecret == "" || rmqURL == "" {
 		return nil, fmt.Errorf("missing required environment variables")
 	}
 
 	config := &Config{
 		Livekit: Livekit{
-			URL:       url,
-			ApiKey:    apiKey,
-			ApiSecret: apiSecret,
+			URL:       livekitURL,
+			ApiKey:    livekitApiKey,
+			ApiSecret: livekitApiSecret,
 		},
 		RMQ: RMQ{
 			URL: rmqURL,
