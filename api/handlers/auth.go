@@ -29,6 +29,7 @@ func RefreshTokenHandler(w http.ResponseWriter, r *http.Request) {
 			}, http.StatusOK)
 			return
 		}
+
 		http.Error(w, "invalid token", http.StatusUnauthorized)
 		return
 	}
