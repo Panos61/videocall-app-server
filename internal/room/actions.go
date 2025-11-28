@@ -142,5 +142,13 @@ func KillRoom(roomID, participantID string) error {
 		return err
 	}
 
+	systemevents.PublishSystemEvent(roomID, systemevents.SystemEvent{
+		Type:      events.RoomKilled,
+		SessionID: "",
+		Payload: map[string]any{
+			"timestamp": time.Now().Unix(),
+		},
+	})
+
 	return nil
 }

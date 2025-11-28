@@ -16,6 +16,10 @@ type HostUpdatedPayload struct {
 	Timestamp     time.Time `json:"timestamp"`
 }
 
+type HostKilledRoomPayload struct {
+	Timestamp time.Time `json:"timestamp"`
+}
+
 func handleHostLeft(roomID string, payload HostLeftPayload) {
 	PublishSystemEvent(roomID, SystemEvent{
 		Type: events.HostLeft,
@@ -33,6 +37,15 @@ func handleHostUpdated(roomID string, payload HostUpdatedPayload) {
 			"current_host_id": payload.CurrentHostID,
 			"new_host_id":     payload.NewHostID,
 			"timestamp":       payload.Timestamp,
+		},
+	})
+}
+
+func handleRoomKilled(roomID string, payload HostKilledRoomPayload) {
+	PublishSystemEvent(roomID, SystemEvent{
+		Type: events.RoomKilled,
+		Payload: map[string]any{
+			"timestamp": payload.Timestamp,
 		},
 	})
 }

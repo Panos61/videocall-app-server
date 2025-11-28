@@ -36,6 +36,8 @@ func SystemEventsSubscription(roomID string, participantID string, conn *websock
 				handleTypedEvent(roomID, clientEvent.Payload, handleHostLeft)
 			case events.HostUpdated:
 				handleTypedEvent(roomID, clientEvent.Payload, handleHostUpdated)
+			case events.RoomKilled:
+				handleTypedEvent(roomID, clientEvent.Payload, handleRoomKilled)
 			default:
 				fmt.Println("clientEvent.Type", clientEvent.Type)
 			}
@@ -69,10 +71,6 @@ func SystemEventsSubscription(roomID string, participantID string, conn *websock
 				case <-done:
 					return
 				default:
-					if shouldSkipNotification(eventData, participantID) {
-						continue
-					}
-
 					if err := conn.WriteJSON(eventData); err != nil {
 						return
 					}
@@ -95,17 +93,4 @@ func PublishSystemEvent(roomID string, event SystemEvent) {
 	if err := rdb.Client().Publish(rdb.Context(), "room:"+roomID+":system_events", payloadJSON).Err(); err != nil {
 		return
 	}
-}
-
-func shouldSkipNotification(event SystemEvent, participantID string) bool {
-	if event.SessionID == "" {
-		return false
-	}
-
-	storedParticipantID, err := rdb.Client().Get(rdb.Context(), "session:"+event.SessionID).Result()
-	if err != nil {
-		return true
-	}
-
-	return participantID == storedParticipantID
 }
