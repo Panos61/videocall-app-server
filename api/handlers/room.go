@@ -132,6 +132,17 @@ func KillRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	participant, err := participant.GetParticipant(roomID, claims.ParticipantID)
+	if err != nil {
+		http.Error(w, "failed to get participant", http.StatusInternalServerError)
+		return
+	}
+
+	if !participant.IsHost {
+		http.Error(w, "only host can kill the room", http.StatusForbidden)
+		return
+	}
+
 	err = room.KillRoom(roomID, claims.ParticipantID)
 	if err != nil {
 		http.Error(w, "failed to kill call", http.StatusInternalServerError)
