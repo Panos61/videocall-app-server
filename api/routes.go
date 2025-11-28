@@ -15,11 +15,11 @@ func (a *API) InitializeRoutes() *http.ServeMux {
 
 	mux.HandleFunc("GET /create-room", CorsMiddleware(http.HandlerFunc(api.CreateRoomHandler)))
 	mux.HandleFunc("/join-room/{room_id}", WithRoomValidation(api.JoinRoomHandler))
-	mux.HandleFunc("/exit-room/{room_id}", WithRoomValidation(api.ExitRoomHandler))
 	mux.HandleFunc("/start-call/{room_id}", WithRoomValidation(api.StartCallHandler))
 	mux.HandleFunc("/leave-call/{room_id}", WithRoomValidation(api.LeaveCallHandler))
-	mux.HandleFunc("/kill-room/{room_id}", WithRoomValidation(api.KillRoomHandler))
 	mux.HandleFunc("/assign-host/{room_id}", WithRoomValidation(api.AssignHostHandler))
+	mux.HandleFunc("/exit-room/{room_id}", WithRoomValidation(api.ExitRoomHandler))
+	mux.HandleFunc("/kill-room/{room_id}", WithRoomValidation(api.KillRoomHandler))
 
 	mux.HandleFunc("/lvk-token/{room_id}", WithRoomValidation(api.LivekitTokenHandler))
 
