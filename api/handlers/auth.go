@@ -62,7 +62,7 @@ func AuthorizationHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing room_id", http.StatusBadRequest)
 		return
 	}
-	_, err = room.GetRoom(roomID)
+	_, err = room.GetRoomID(roomID)
 	if err != nil {
 		http.Error(w, "room not found", http.StatusNotFound)
 		return

@@ -49,7 +49,7 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := room.GetRoom(roomID)
+	_, err := room.GetRoomID(roomID)
 	if err != nil {
 		http.Error(w, "room not found", http.StatusNotFound)
 		return
@@ -154,7 +154,6 @@ func KillRoomHandler(w http.ResponseWriter, r *http.Request) {
 	}, http.StatusOK)
 }
 
-// for now it's just the room created_at timestamp
 func GetRoomInfoHandler(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("room_id")
 	if roomID == "" {
@@ -168,5 +167,5 @@ func GetRoomInfoHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.JSONResponse(w, roomInfo.CreatedAt, http.StatusOK)
+	utils.JSONResponse(w, roomInfo, http.StatusOK)
 }

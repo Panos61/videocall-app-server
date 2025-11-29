@@ -7,6 +7,8 @@ import (
 )
 
 type RoomInfo struct {
+	ID        string    `json:"id"`
+	HostID    string    `json:"host_id"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -19,10 +21,10 @@ func GetInfo(roomID string) (RoomInfo, error) {
 	createdAtUnix, _ := strconv.ParseInt(roomData["created_at"], 10, 64)
 	createdAt := time.Unix(createdAtUnix, 0)
 
-	return RoomInfo{CreatedAt: createdAt}, nil
+	return RoomInfo{ID: roomData["id"], HostID: roomData["host_id"], CreatedAt: createdAt}, nil
 }
 
-func GetRoom(id string) (string, error) {
+func GetRoomID(id string) (string, error) {
 	roomData, err := rdb.Client().HGetAll(rdb.Context(), "room:"+id).Result()
 	if err != nil || len(roomData) == 0 {
 		return "", err

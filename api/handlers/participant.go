@@ -108,7 +108,7 @@ type reqBody struct {
 func SetParticipantCallDataHandler(w http.ResponseWriter, r *http.Request) {
 	roomID := r.PathValue("room_id")
 
-	_, err := room.GetRoom(roomID)
+	_, err := room.GetRoomID(roomID)
 	if err != nil {
 		http.Error(w, "room not found", http.StatusNotFound)
 		return
