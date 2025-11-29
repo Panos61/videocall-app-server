@@ -49,21 +49,21 @@ func StartCall(roomID, participantID string) (CallState, error) {
 }
 
 func LeaveCall(roomID, participantID string) (bool, error) {
-	participant, err := participant.GetParticipant(roomID, participantID)
+	participantData, err := participant.GetParticipant(roomID, participantID)
 	if err != nil {
 		return false, nil
 	}
 
-	participantIDs, err := rdb.Client().SMembers(rdb.Context(), "room:"+roomID+":participants").Result()
+	_, participantsInCall, err := participant.GetParticipants(roomID)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 
 	pipe := rdb.Client().TxPipeline()
-	pipe.Del(rdb.Context(), "session:"+participant.SessionID)
-	pipe.HDel(rdb.Context(), "room:"+roomID+":participant:"+participant.ID, "session_id")
+	pipe.Del(rdb.Context(), "session:"+participantData.SessionID)
+	pipe.HDel(rdb.Context(), "room:"+roomID+":participant:"+participantData.ID, "session_id")
 
-	if len(participantIDs) == 1 {
+	if len(participantsInCall) == 1 {
 		pipe.Del(rdb.Context(), "call:"+roomID)
 	}
 
