@@ -13,7 +13,7 @@ func GetInvitationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	existingRoomID, err := room.GetRoom(roomID)
+	existingRoomID, err := room.GetRoomID(roomID)
 	if err != nil {
 		http.Error(w, "room not found", http.StatusNotFound)
 		return

@@ -37,7 +37,7 @@ func ValidateRoomIDMiddleware(next http.Handler) http.HandlerFunc {
 			return
 		}
 
-		roomExists, _ := room.GetRoom(roomID)
+		roomExists, _ := room.GetRoomID(roomID)
 		if roomExists == "" {
 			http.Error(w, "room not found", http.StatusNotFound)
 			return
