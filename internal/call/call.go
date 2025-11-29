@@ -63,20 +63,6 @@ func LeaveCall(roomID, participantID string) (bool, error) {
 	pipe.Del(rdb.Context(), "session:"+participant.SessionID)
 	pipe.HDel(rdb.Context(), "room:"+roomID+":participant:"+participant.ID, "session_id")
 
-	// if len(participantIDs) != 1 {
-	// 	if participant.IsHost {
-	// 		_, err := notifyHostLeft(roomID, participant)
-	// 		if err != nil {
-	// 			return false, err
-	// 		}
-	// 	} else {
-	// 		_, err := notifyUserLeft(roomID, participant)
-	// 		if err != nil {
-	// 			return false, err
-	// 		}
-	// 	}
-	// }
-
 	if len(participantIDs) == 1 {
 		pipe.Del(rdb.Context(), "call:"+roomID)
 	}
