@@ -85,16 +85,3 @@ func GetCallStateHandler(w http.ResponseWriter, r *http.Request) {
 
 	utils.JSONResponse(w, callState, http.StatusOK)
 }
-
-func CallBroadcastHandler(w http.ResponseWriter, r *http.Request) {
-	roomID := r.PathValue("room_id")
-
-	conn, err := upgrader.Upgrade(w, r, nil)
-	if err != nil {
-		http.Error(w, "failed to upgrade to websocket", http.StatusInternalServerError)
-		return
-	}
-	defer conn.Close()
-
-	call.CallSubscription(roomID, conn)
-}
