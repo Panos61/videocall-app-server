@@ -43,7 +43,6 @@ func (a *API) InitializeRoutes() *http.ServeMux {
 	mux.HandleFunc("/ws/chat/{room_id}", WithRoomValidation(func(w http.ResponseWriter, r *http.Request) {
 		api.MessageExchange(w, r, a.Chat)
 	}))
-
 	mux.HandleFunc("/ws/participants/{room_id}", WithRoomValidation(api.ParticipantsHandler))
 
 	mux.HandleFunc("/ws/settings-broadcast/{room_id}", WithRoomValidation(api.SettingsBroadcastHandler))
