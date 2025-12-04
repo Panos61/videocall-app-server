@@ -1,0 +1,26 @@
+# syntax=docker/dockerfile:1
+FROM golang:1.25-alpine
+
+WORKDIR /app
+
+RUN apk add --no-cache bash ca-certificates curl git
+
+COPY go.mod go.sum ./
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
+    
+COPY . .
+
+ENV APP_ENV=development \
+    REDIS_URL=redis:6379 \
+    REDIS_DB=0 \
+    RMQ_URL=amqp://guest:guest@rabbitmq:5672/ \
+    LIVEKIT_URL=http://host.docker.internal:7880 \
+    LIVEKIT_API_KEY=dev-key \
+    LIVEKIT_API_SECRET=dev-secret \
+    JWT_SECRET=dev-secret
+    
+EXPOSE 8080
+
+RUN go install github.com/air-verse/air@latest
+CMD ["air", "-c", ".air.toml"]
