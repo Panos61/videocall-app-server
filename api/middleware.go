@@ -8,17 +8,25 @@ import (
 
 func CorsMiddleware(next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// log.Printf("CORS Middleware handling request: %s %s", r.Method, r.URL.Path)
+		origin := r.Header.Get("Origin")
 
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Credentials", "true")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, Pragma, Expires, X-Requested-With")
-		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, PATCH")
-		w.Header().Set("Content-Type", "application/json")
+		allowed := map[string]bool{
+			"https://app.panos-dev.com": true,
+			"http://localhost:5173":     true,
+		}
+
+		if allowed[origin] {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Vary", "Origin")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+		}
+
+		w.Header().Set("Access-Control-Allow-Headers",
+			"Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH, OPTIONS")
 
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusNoContent)
-			// log.Printf("Preflight request handled: %s %s", r.Method, r.URL.Path)
 			return
 		}
 
