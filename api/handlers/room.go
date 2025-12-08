@@ -21,25 +21,22 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// set host's jwt cookie
 	jwtCookie := http.Cookie{
-		Name:     "jwt-cookie",
+		Name:     "rsCookie",
 		Value:    hostParticipant.Token,
 		MaxAge:   3600,
 		HttpOnly: true,
 		Secure:   true,
 		Path:     "/",
-		Domain:   "",
-		SameSite: http.SameSiteLaxMode,
+		Domain:   ".panos-dev.com",
+		SameSite: http.SameSiteNoneMode,
 	}
 	http.SetCookie(w, &jwtCookie)
 
-	response := map[string]interface{}{
+	utils.JSONResponse(w, map[string]any{
 		"id":           newRoom,
 		"participants": *hostParticipant,
-	}
-
-	utils.JSONResponse(w, response, http.StatusCreated)
+	}, http.StatusCreated)
 }
 
 func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
@@ -63,14 +60,14 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	jwtCookie := http.Cookie{
-		Name:     "jwt-cookie",
+		Name:     "rsCookie",
 		Value:    joinedParticipant.Token,
 		MaxAge:   3600,
 		HttpOnly: true,
 		Secure:   true,
 		Path:     "/",
-		Domain:   "",
-		SameSite: http.SameSiteLaxMode,
+		Domain:   ".panos-dev.com",
+		SameSite: http.SameSiteNoneMode,
 	}
 	http.SetCookie(w, &jwtCookie)
 
