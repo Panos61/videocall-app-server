@@ -2,7 +2,7 @@ package systemevents
 
 import "encoding/json"
 
-func handleTypedEvent[T any](roomID string, payload map[string]any, handler func(string, T)) {
+func handleEvent[T any](roomID string, payload map[string]any, handler func(string, T)) {
 	var typedPayload T
 
 	if jsonData, err := json.Marshal(payload); err == nil {

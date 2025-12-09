@@ -1,4 +1,4 @@
-package systemevents
+package userevents
 
 import (
 	"encoding/json"
@@ -10,13 +10,13 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type SystemEvent struct {
+type UserEvent struct {
 	Type      string         `json:"type"`
 	SessionID string         `json:"session_id,omitempty"`
 	Payload   map[string]any `json:"payload"`
 }
 
-func SystemEventsSubscription(roomID string, conn *websocket.Conn) {
+func UserEventsSubscription(roomID string, participantID string, conn *websocket.Conn) {
 	done := make(chan struct{})
 
 	// Start a goroutine to read from the websocket
@@ -25,19 +25,20 @@ func SystemEventsSubscription(roomID string, conn *websocket.Conn) {
 		defer close(done)
 		for {
 			// ReadMessage blocks until a message is received or an error occurs
-			var clientEvent SystemEvent
+			var clientEvent UserEvent
 			err := conn.ReadJSON(&clientEvent)
 			if err != nil {
 				return
 			}
+			// fmt.Println("Reading clientEvent", clientEvent)
 
 			switch clientEvent.Type {
-			case events.HostLeft:
-				handleEvent(roomID, clientEvent.Payload, handleHostLeft)
-			case events.HostUpdated:
-				handleEvent(roomID, clientEvent.Payload, handleHostUpdated)
-			case events.RoomKilled:
-				handleEvent(roomID, clientEvent.Payload, handleRoomKilled)
+			case events.RaisedHand:
+				handleEvent(roomID, participantID, clientEvent.Payload, handleRaisedHandSent)
+			case events.ShareScreenStarted:
+				handleEvent(roomID, participantID, clientEvent.Payload, handleShareScreenStarted)
+			case events.ReactionSent:
+				handleEvent(roomID, participantID, clientEvent.Payload, handleReactionSent)
 			default:
 				fmt.Println("clientEvent.Type", clientEvent.Type)
 			}
@@ -45,7 +46,7 @@ func SystemEventsSubscription(roomID string, conn *websocket.Conn) {
 	}()
 
 	go func() {
-		subscriber := rdb.Client().Subscribe(rdb.Context(), "room:"+roomID+":system_events")
+		subscriber := rdb.Client().Subscribe(rdb.Context(), "room:"+roomID+":user_events")
 		defer subscriber.Close()
 
 		for {
@@ -59,12 +60,15 @@ func SystemEventsSubscription(roomID string, conn *websocket.Conn) {
 				if err != nil {
 					return
 				}
+				fmt.Println("Reading msg", msg)
 
-				var eventData SystemEvent
+				var eventData UserEvent
 				err = json.Unmarshal([]byte(msg.Payload), &eventData)
 				if err != nil {
 					continue
 				}
+
+				fmt.Println("Reading eventData", eventData)
 
 				// Check again if the connection is closed before writing
 				select {
@@ -83,14 +87,14 @@ func SystemEventsSubscription(roomID string, conn *websocket.Conn) {
 	<-done
 }
 
-func PublishSystemEvent(roomID string, event SystemEvent) {
+func PublishUserEvent(roomID string, event UserEvent) {
 	payloadJSON, err := json.Marshal(event)
 	if err != nil {
 		return
 	}
-	fmt.Printf("Publishing system_event: %s\n", string(payloadJSON))
+	fmt.Printf("Publishing user_event: %s\n", string(payloadJSON))
 
-	if err := rdb.Client().Publish(rdb.Context(), "room:"+roomID+":system_events", payloadJSON).Err(); err != nil {
+	if err := rdb.Client().Publish(rdb.Context(), "room:"+roomID+":user_events", payloadJSON).Err(); err != nil {
 		return
 	}
 }
