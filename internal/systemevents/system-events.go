@@ -2,7 +2,6 @@ package systemevents
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"server/internal/events"
 	"server/internal/rdb"
@@ -39,7 +38,7 @@ func SystemEventsSubscription(roomID string, conn *websocket.Conn) {
 			case events.RoomKilled:
 				handleEvent(roomID, clientEvent.Payload, handleRoomKilled)
 			default:
-				fmt.Println("clientEvent.Type", clientEvent.Type)
+				continue
 			}
 		}
 	}()
@@ -88,7 +87,6 @@ func PublishSystemEvent(roomID string, event SystemEvent) {
 	if err != nil {
 		return
 	}
-	fmt.Printf("Publishing system_event: %s\n", string(payloadJSON))
 
 	if err := rdb.Client().Publish(rdb.Context(), "room:"+roomID+":system_events", payloadJSON).Err(); err != nil {
 		return
