@@ -30,9 +30,12 @@ func UserEventsSubscription(roomID string, participantID string, conn *websocket
 			if err != nil {
 				return
 			}
-			// fmt.Println("Reading clientEvent", clientEvent)
 
 			switch clientEvent.Type {
+			case events.MediaStateUpdated:
+				handleEvent(roomID, participantID, clientEvent.Payload, handleMediaState)
+			case events.SyncMedia:
+				handleEvent(roomID, participantID, clientEvent.Payload, handleSyncMedia)
 			case events.RaisedHand:
 				handleEvent(roomID, participantID, clientEvent.Payload, handleRaisedHandSent)
 			case events.ShareScreenStarted:
@@ -40,7 +43,7 @@ func UserEventsSubscription(roomID string, participantID string, conn *websocket
 			case events.ReactionSent:
 				handleEvent(roomID, participantID, clientEvent.Payload, handleReactionSent)
 			default:
-				fmt.Println("clientEvent.Type", clientEvent.Type)
+				continue
 			}
 		}
 	}()

@@ -5,30 +5,51 @@ import (
 	"server/internal/participant"
 )
 
-type MediaControlEvent struct {
+type MediaState struct {
 	AudioEnabled bool `json:"audio"`
 	VideoEnabled bool `json:"video"`
 }
 
-type SyncMediaStateEvent map[string]MediaControlEvent
+type SyncMediaStateEvent map[string]MediaState
 
-type ShareScreenEvent struct {
+type ShareScreen struct {
 	Username string `json:"username"`
 	TrackSID string `json:"track_sid"`
 	Active   bool   `json:"active"`
 }
 
-type RaisedHandEvent struct {
+type RaisedHand struct {
 	HandRaised bool   `json:"raised_hand"`
 	Username   string `json:"username"`
 }
 
-type ReactionEvent struct {
+type Reaction struct {
 	ReactionType string `json:"reaction_type"`
 	Username     string `json:"username"`
 }
 
-func handleReactionSent(roomID, participantID string, reactionData ReactionEvent) {
+func handleMediaState(roomID, participantID string, mediaState MediaState) {
+	PublishUserEvent(roomID, UserEvent{
+		Type: events.MediaStateUpdated,
+		Payload: map[string]any{
+			"audio": mediaState.AudioEnabled,
+			"video": mediaState.VideoEnabled,
+		},
+		SessionID: participantID,
+	})
+}
+
+func handleSyncMedia(roomID, participantID string, syncMediaData SyncMediaStateEvent) {
+	PublishUserEvent(roomID, UserEvent{
+		Type: events.SyncMedia,
+		Payload: map[string]any{
+			"media_state": syncMediaData,
+		},
+		SessionID: participantID,
+	})
+}
+
+func handleReactionSent(roomID, participantID string, reactionData Reaction) {
 	participantData, err := participant.GetParticipant(roomID, participantID)
 	if err != nil {
 		return
@@ -43,7 +64,7 @@ func handleReactionSent(roomID, participantID string, reactionData ReactionEvent
 	})
 }
 
-func handleRaisedHandSent(roomID, participantID string, raisedHandData RaisedHandEvent) {
+func handleRaisedHandSent(roomID, participantID string, raisedHandData RaisedHand) {
 	participantData, err := participant.GetParticipant(roomID, participantID)
 	if err != nil {
 		return
@@ -58,7 +79,7 @@ func handleRaisedHandSent(roomID, participantID string, raisedHandData RaisedHan
 	})
 }
 
-func handleShareScreenStarted(roomID, participantID string, shareScreenData ShareScreenEvent) {
+func handleShareScreenStarted(roomID, participantID string, shareScreenData ShareScreen) {
 	participantData, err := participant.GetParticipant(roomID, participantID)
 	if err != nil {
 		return

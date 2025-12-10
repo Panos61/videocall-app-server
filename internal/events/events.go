@@ -9,10 +9,10 @@ const (
 	RoomKilled  = "room.killed"  // when the room is killed
 
 	// user events
-	MediaControlUpdated = "media.control.updated"
-	SyncMedia           = "sync.media"
-	ReactionSent        = "reaction.sent"
-	RaisedHand          = "raised_hand.sent"
-	ShareScreenStarted  = "share_screen.started"
-	ShareScreenEnded    = "share_screen.ended"
+	MediaStateUpdated  = "media.state.updated"
+	SyncMedia          = "media.synced"
+	ReactionSent       = "reaction.sent"
+	RaisedHand         = "raisedhand.sent"
+	ShareScreenStarted = "sharescreen.started"
+	ShareScreenEnded   = "sharescreen.ended"
 )
