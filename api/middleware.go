@@ -8,11 +8,16 @@ import (
 
 func CorsMiddleware(next http.Handler) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// w.Header().Set("Access-Control-Allow-Origin", "*")
+		// w.Header().Set("Access-Control-Allow-Credentials", "true")
+		// w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, Pragma, Expires, X-Requested-With")
+		// w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, PATCH")
+		// w.Header().Set("Content-Type", "application/json")
 		origin := r.Header.Get("Origin")
 
 		allowed := map[string]bool{
 			"https://app.panos-dev.com": true,
-			"http://localhost:5173":     true,
+			"http://localhost:3000":     true,
 		}
 
 		if allowed[origin] {

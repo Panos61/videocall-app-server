@@ -21,6 +21,24 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// cookie := http.Cookie{
+	// 	Name:     "rsCookie",
+	// 	Value:    token,
+	// 	MaxAge:   3600,
+	// 	HttpOnly: true,
+	// 	Path:     "/",
+	// }
+
+	// if isProd {
+	// 	cookie.Secure = true
+	// 	cookie.Domain = ".panos-dev.com"
+	// 	cookie.SameSite = http.SameSiteNoneMode
+	// } else {
+	// 	cookie.Secure = false
+	// 	cookie.Domain = "" // host-only
+	// 	cookie.SameSite = http.SameSiteLaxMode
+	// }
+
 	jwtCookie := http.Cookie{
 		Name:     "rsCookie",
 		Value:    hostParticipant.Token,
@@ -29,7 +47,7 @@ func CreateRoomHandler(w http.ResponseWriter, r *http.Request) {
 		Secure:   true,
 		Path:     "/",
 		Domain:   ".panos-dev.com",
-		SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(w, &jwtCookie)
 
@@ -67,8 +85,9 @@ func JoinRoomHandler(w http.ResponseWriter, r *http.Request) {
 		Secure:   true,
 		Path:     "/",
 		Domain:   ".panos-dev.com",
-		SameSite: http.SameSiteNoneMode,
+		SameSite: http.SameSiteLaxMode,
 	}
+
 	http.SetCookie(w, &jwtCookie)
 
 	response := struct {
