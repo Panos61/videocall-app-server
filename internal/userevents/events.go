@@ -3,6 +3,7 @@ package userevents
 import (
 	"server/internal/events"
 	"server/internal/participant"
+	"server/internal/room"
 )
 
 type MediaState struct {
@@ -35,17 +36,24 @@ func handleMediaState(roomID, participantID string, mediaState MediaState) {
 			"audio": mediaState.AudioEnabled,
 			"video": mediaState.VideoEnabled,
 		},
-		SessionID: participantID,
+		ParticipantID: participantID,
 	})
 }
 
 func handleSyncMedia(roomID, participantID string, syncMediaData SyncMediaStateEvent) {
+	if !room.IsRoomLeader(roomID, participantID) {
+		return
+	}
+
+	payload := make(map[string]any)
+	for k, v := range syncMediaData {
+		payload[k] = v
+	}
+
 	PublishUserEvent(roomID, UserEvent{
-		Type: events.SyncMedia,
-		Payload: map[string]any{
-			"media_state": syncMediaData,
-		},
-		SessionID: participantID,
+		Type:          events.SyncMedia,
+		Payload:       payload,
+		ParticipantID: participantID,
 	})
 }
 

@@ -11,9 +11,10 @@ import (
 )
 
 type UserEvent struct {
-	Type      string         `json:"type"`
-	SessionID string         `json:"session_id,omitempty"`
-	Payload   map[string]any `json:"payload"`
+	Type          string         `json:"type"`
+	SessionID     string         `json:"session_id,omitempty"`
+	ParticipantID string         `json:"participant_id,omitempty"`
+	Payload       map[string]any `json:"payload"`
 }
 
 func UserEventsSubscription(roomID string, participantID string, conn *websocket.Conn) {
