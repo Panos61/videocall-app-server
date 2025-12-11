@@ -25,10 +25,32 @@ func GetInfo(roomID string) (RoomInfo, error) {
 }
 
 func GetRoomID(id string) (string, error) {
-	roomData, err := rdb.Client().HGetAll(rdb.Context(), "room:"+id).Result()
-	if err != nil || len(roomData) == 0 {
+	roomID, err := rdb.Client().HGet(rdb.Context(), "room:"+id, "id").Result()
+	if err != nil {
 		return "", err
 	}
 
-	return roomData["id"], nil
+	return roomID, nil
+}
+
+func SetRoomLeader(roomID, leaderID string) error {
+	return rdb.Client().HSet(rdb.Context(), "room:"+roomID, "leader_id", leaderID).Err()
+}
+
+func GetRoomLeader(roomID string) (string, error) {
+	leaderId, err := rdb.Client().HGet(rdb.Context(), "room:"+roomID, "leader_id").Result()
+	if err != nil {
+		return "", err
+	}
+
+	return leaderId, nil
+}
+
+func IsRoomLeader(roomID, participantID string) bool {
+	leaderID, err := GetRoomLeader(roomID)
+	if err != nil {
+		return false
+	}
+
+	return leaderID == participantID
 }

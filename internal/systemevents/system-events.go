@@ -2,7 +2,6 @@ package systemevents
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"server/internal/events"
 	"server/internal/rdb"
@@ -16,7 +15,7 @@ type SystemEvent struct {
 	Payload   map[string]any `json:"payload"`
 }
 
-func SystemEventsSubscription(roomID string, participantID string, conn *websocket.Conn) {
+func SystemEventsSubscription(roomID string, conn *websocket.Conn) {
 	done := make(chan struct{})
 
 	// Start a goroutine to read from the websocket
@@ -33,13 +32,13 @@ func SystemEventsSubscription(roomID string, participantID string, conn *websock
 
 			switch clientEvent.Type {
 			case events.HostLeft:
-				handleTypedEvent(roomID, clientEvent.Payload, handleHostLeft)
+				handleEvent(roomID, clientEvent.Payload, handleHostLeft)
 			case events.HostUpdated:
-				handleTypedEvent(roomID, clientEvent.Payload, handleHostUpdated)
+				handleEvent(roomID, clientEvent.Payload, handleHostUpdated)
 			case events.RoomKilled:
-				handleTypedEvent(roomID, clientEvent.Payload, handleRoomKilled)
+				handleEvent(roomID, clientEvent.Payload, handleRoomKilled)
 			default:
-				fmt.Println("clientEvent.Type", clientEvent.Type)
+				continue
 			}
 		}
 	}()
@@ -88,7 +87,6 @@ func PublishSystemEvent(roomID string, event SystemEvent) {
 	if err != nil {
 		return
 	}
-	fmt.Printf("Publishing system_event: %s\n", string(payloadJSON))
 
 	if err := rdb.Client().Publish(rdb.Context(), "room:"+roomID+":system_events", payloadJSON).Err(); err != nil {
 		return

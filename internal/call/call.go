@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"server/internal/participant"
 	"server/internal/rdb"
+	"server/internal/room"
 	"strconv"
 	"time"
 )
@@ -42,6 +43,11 @@ func StartCall(roomID, participantID string) (CallState, error) {
 		return CallState{}, err
 	}
 
+	leaderID, err := room.GetRoomLeader(roomID)
+	if err != nil || leaderID == "" {
+		room.SetRoomLeader(roomID, participantID)
+	}
+
 	return callState, nil
 }
 
@@ -54,6 +60,12 @@ func LeaveCall(roomID, participantID string) (bool, error) {
 	_, participantsInCall, err := participant.GetParticipants(roomID)
 	if err != nil {
 		return false, err
+	}
+
+	if room.IsRoomLeader(roomID, participantID) {
+		if len(participantsInCall) > 1 {
+			room.SetRoomLeader(roomID, participantsInCall[0].ID)
+		}
 	}
 
 	pipe := rdb.Client().TxPipeline()

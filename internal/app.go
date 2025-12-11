@@ -26,6 +26,6 @@ func Run(rmqClient *rmq.RMQ) {
 	mux := a.InitializeRoutes()
 
 	addr := ":8080"
-	log.Printf("HTTP listening on %s", addr)
+	log.Printf("Server listening on %s", addr)
 	log.Fatal(http.ListenAndServe(addr, mux))
 }

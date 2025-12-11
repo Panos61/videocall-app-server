@@ -25,7 +25,7 @@ func LivekitTokenHandler(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	var requestBody struct {
-		SessionID string `json:"session_id"`
+		ParticipantID string `json:"participant_id"`
 	}
 
 	err = json.Unmarshal(body, &requestBody)
@@ -34,13 +34,13 @@ func LivekitTokenHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sessionID := requestBody.SessionID
-	if sessionID == "" {
-		http.Error(w, "missing session_id", http.StatusBadRequest)
+	participantID := requestBody.ParticipantID
+	if participantID == "" {
+		http.Error(w, "missing participant_id", http.StatusBadRequest)
 		return
 	}
 
-	livekitToken, err := createLivekitToken(roomID, sessionID)
+	livekitToken, err := createLivekitToken(roomID, participantID)
 	if err != nil {
 		http.Error(w, "failed to create livekit token", http.StatusInternalServerError)
 		return
@@ -49,7 +49,7 @@ func LivekitTokenHandler(w http.ResponseWriter, r *http.Request) {
 	utils.JSONResponse(w, livekitToken, http.StatusOK)
 }
 
-func createLivekitToken(roomID, sessionID string) (string, error) {
+func createLivekitToken(roomID, participantID string) (string, error) {
 	config, err := config.LoadConfig()
 	if err != nil {
 		return "", err
@@ -59,7 +59,7 @@ func createLivekitToken(roomID, sessionID string) (string, error) {
 	LIVEKIT_API_SECRET := config.Livekit.ApiSecret
 
 	token := auth.NewAccessToken(LIVEKIT_API_KEY, LIVEKIT_API_SECRET)
-	token.SetIdentity(sessionID)
+	token.SetIdentity(participantID)
 	token.SetVideoGrant(&auth.VideoGrant{
 		RoomJoin: true,
 		Room:     roomID,

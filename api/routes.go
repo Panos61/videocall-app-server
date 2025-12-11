@@ -46,7 +46,7 @@ func (a *API) InitializeRoutes() *http.ServeMux {
 	mux.HandleFunc("/ws/participants/{room_id}", WithRoomValidation(api.ParticipantsHandler))
 
 	mux.HandleFunc("/ws/settings-broadcast/{room_id}", WithRoomValidation(api.SettingsBroadcastHandler))
-	mux.HandleFunc("/ws/user-events/{room_id}", WithRoomValidation(api.UserEventHandler))
+	mux.HandleFunc("/ws/user-events/{room_id}", WithRoomValidation(api.UserEventsHandler))
 	mux.HandleFunc("/ws/system-events/{room_id}", WithRoomValidation(api.SystemEventsHandler))
 
 	return mux
